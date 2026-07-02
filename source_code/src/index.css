@@ -19,7 +19,13 @@ body,
 @media print {
   @page {
     size: A4;
-    margin: 0;
+    /* margin: 0 meant only the FIRST physical page got any top/bottom breathing
+       room (from the templates' own one-time p-6/p-7/p-8 padding on the
+       continuously-flowing content box) — every subsequent page started flush
+       against the paper edge, since pagination doesn't re-apply that padding
+       per page. A real @page margin gives every physical page the same
+       top/bottom/left/right breathing room automatically. */
+    margin: 12mm 15mm;
   }
 
   body * {
