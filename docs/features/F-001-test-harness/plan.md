@@ -28,24 +28,24 @@ sync with `vite.config.ts` for no benefit at this project's size.
 | `.github/workflows/ci.yml` | uncomment `npm test` step |
 
 ## Steps
-1. [ ] Add devDependencies and npm scripts to `package.json`; run `npm install`.
-2. [ ] Add `test` block to `vite.config.ts`; add `vitest/globals` to `tsconfig.app.json` types.
-3. [ ] Add oxlint ignore pattern for test files.
-4. [ ] Export `parseJson` from `src/lib/gemini.ts` (add to existing export statement, no logic change).
-5. [ ] Write `src/store/resume.test.ts`: covers `addItem`, `updateItem`, `removeItem`,
+1. [x] Add devDependencies and npm scripts to `package.json`; run `npm install`.
+2. [x] Add `test` block to `vite.config.ts`; add `vitest/globals` to `tsconfig.app.json` types.
+3. [x] Add oxlint ignore pattern for test files.
+4. [x] Export `parseJson` from `src/lib/gemini.ts` (add to existing export statement, no logic change).
+5. [x] Write `src/store/resume.test.ts`: covers `addItem`, `updateItem`, `removeItem`,
    `moveItem` (mid-list + both-edges no-op), `moveSection` (both-edges no-op),
    `toggleSection` (on/off idempotency), `reset`, `setResume` (merge-with-defaults),
    `loadSample`. Reset Zustand store state between tests (call `reset()` or re-import
    fresh state per the store's public API — no reaching into internals).
-6. [ ] Write `src/lib/gemini.test.ts`: `parseJson` with clean JSON, ```json-fenced JSON,
+6. [x] Write `src/lib/gemini.test.ts`: `parseJson` with clean JSON, ```json-fenced JSON,
    JSON embedded in prose, and unparseable input (assert it throws the documented error).
-7. [ ] Write `src/lib/file.test.ts`: `importResumeJson` with a valid full `File`, a valid
+7. [x] Write `src/lib/file.test.ts`: `importResumeJson` with a valid full `File`, a valid
    `File` missing optional sections (assert defaults filled), invalid JSON `File`,
    non-object JSON `File`, JSON object missing `basics`, and a `FileReader` error path
    (mock `FileReader.prototype.readAsText` to trigger `onerror`).
-8. [ ] Run `npm run lint && npm run build && npm test` locally — all green.
-9. [ ] Uncomment the `npm test` line in `.github/workflows/ci.yml`.
-10. [ ] Confirm `npm test` is red-then-green at least once during development (e.g. a
+8. [x] Run `npm run lint && npm run build && npm test` locally — all green.
+9. [x] Uncomment the `npm test` line in `.github/workflows/ci.yml`.
+10. [x] Confirm `npm test` is red-then-green at least once during development (e.g. a
     deliberately wrong assertion) to prove the harness actually fails on failure —
     record the observation in review.md, don't leave the deliberate failure in the diff.
 
