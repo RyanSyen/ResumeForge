@@ -6,6 +6,7 @@ import type { TailorResult } from '../../types'
 import { newId, useResume } from '../../store/resume'
 import { useSettings } from '../../store/settings'
 import { MissingKeyError, tailorResume } from '../../lib/gemini'
+import { repairAiData, type PersistedAiState } from '../../lib/schema'
 import { Button } from '../ui'
 
 interface AiStore {
@@ -13,6 +14,11 @@ interface AiStore {
   result: TailorResult | null
   setJobDescription: (jd: string) => void
   setResult: (r: TailorResult | null) => void
+}
+
+export function migrateAiState(persisted: unknown, version: number): PersistedAiState {
+  if (version >= 1) return persisted as PersistedAiState
+  return repairAiData(persisted)
 }
 
 const useAi = create<AiStore>()(
@@ -23,7 +29,11 @@ const useAi = create<AiStore>()(
       setJobDescription: (jobDescription) => set({ jobDescription }),
       setResult: (result) => set({ result }),
     }),
-    { name: 'resume-builder:ai' },
+    {
+      name: 'resume-builder:ai',
+      version: 1,
+      migrate: migrateAiState,
+    },
   ),
 )
 

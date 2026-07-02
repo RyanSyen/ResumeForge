@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { TemplateId } from '../types'
+import { repairSettingsData, type PersistedSettings } from '../lib/schema'
 
 export const GEMINI_MODELS = [
   { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (recommended)' },
@@ -22,6 +23,18 @@ interface SettingsStore {
   closeSettings: () => void
 }
 
+const SETTINGS_DEFAULTS: PersistedSettings = {
+  apiKey: '',
+  model: 'gemini-2.5-flash',
+  template: 'modern',
+  accent: '#0f766e',
+}
+
+export function migrateSettingsState(persisted: unknown, version: number): PersistedSettings {
+  if (version >= 1) return persisted as PersistedSettings
+  return repairSettingsData(persisted, SETTINGS_DEFAULTS)
+}
+
 export const useSettings = create<SettingsStore>()(
   persist(
     (set) => ({
@@ -39,12 +52,14 @@ export const useSettings = create<SettingsStore>()(
     }),
     {
       name: 'resume-builder:settings',
+      version: 1,
       partialize: (s) => ({
         apiKey: s.apiKey,
         model: s.model,
         template: s.template,
         accent: s.accent,
       }),
+      migrate: migrateSettingsState,
     },
   ),
 )

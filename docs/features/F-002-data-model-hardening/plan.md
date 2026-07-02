@@ -48,21 +48,21 @@ strict/lenient split almost for free from one schema definition.
 | `src/lib/schema.test.ts` | new — direct tests of `parseResumeData`/`repairResumeData` (valid/invalid/repairable payloads) |
 
 ## Steps
-1. [ ] Add `zod@^4.4.3` to `package.json`; `npm install`.
-2. [ ] Create `src/lib/id.ts` with `newId()`; update `resume.ts` to import from it (no behavior change) — run tests to confirm still green before continuing.
-3. [ ] Write `src/lib/schema.ts`:
+1. [x] Add `zod@^4.4.3` to `package.json`; `npm install`.
+2. [x] Create `src/lib/id.ts` with `newId()`; update `resume.ts` to import from it (no behavior change) — run tests to confirm still green before continuing.
+3. [x] Write `src/lib/schema.ts`:
    - Field schemas for `Basics` (all 8 string fields, `.catch('')` variant for lenient mode) and each of the 6 list-item shapes (`ExperienceItem`, `EducationItem`, `ProjectItem`, `SkillGroup`, `CertificationItem`, `LanguageItem`), each with `id` optional/blank-repaired via a shared item-id transform using `newId()`.
    - `SectionKey`/`sectionOrder`/`hiddenSections`: array of the 7-value enum; missing → default order / `[]`; present-but-invalid → reject in strict mode, fall back to default in lenient mode.
    - Compose `resumeDataSchema` (strict) and a lenient variant (same shapes, `.catch()` per top-level field falling back to the matching `emptyResume()` field).
    - Export `class SchemaError extends Error`, `parseResumeData(raw): ResumeData` (throws `SchemaError` with a message naming the offending field, e.g. `Invalid "skills": expected an array.`), `repairResumeData(raw): ResumeData` (never throws).
-4. [ ] Update `src/lib/file.ts`: `importResumeJson` calls `parseResumeData(data)` instead of the current shallow merge; keep the existing `FileReader.onerror` → `'Could not read the file.'` and a `JSON.parse` failure → `'This file is not valid JSON.'`; let `SchemaError` messages surface as-is (satisfies AC2's "specific error message").
-5. [ ] Update `src/store/resume.ts`: add `version: 1`, `migrate: (persisted, version) => version < 1 ? { resume: repairResumeData((persisted as { resume?: unknown })?.resume) } : persisted as { resume: ResumeData }`.
-6. [ ] Update `src/store/settings.ts` and the `useAi` store in `AiPanel.tsx`: add `version: 1` + small lenient Zod schemas + `migrate` following the same pattern, scoped to their flat shapes.
-7. [ ] Write `src/lib/schema.test.ts`: valid payload passes through unchanged; missing ids repaired (both strict and lenient); wrong-typed field throws `SchemaError` with a message that names the field (strict) vs. silently defaults (lenient); unknown top-level and item-level keys stripped.
-8. [ ] Extend `src/lib/file.test.ts` per spec AC1/AC2/AC4: missing-id import succeeds with generated ids; `skills: "foo"`-style payload rejected with a specific (non-generic) message; export→import round-trip is deep-equal for the sample resume.
-9. [ ] Extend `src/store/resume.test.ts`: simulate a pre-version localStorage payload (raw object matching the old un-versioned shape, including a malformed field) and confirm `migrate` produces a fully valid `ResumeData` without throwing — proves AC3 + AC5.
-10. [ ] Add light migration tests for settings/`useAi` stores (versionless payload → valid v1 state).
-11. [ ] Run `npm run lint && npm run build && npm test` — all green. Confirm bundle size increase from adding Zod is reported in review.md (informational, not a gate).
+4. [x] Update `src/lib/file.ts`: `importResumeJson` calls `parseResumeData(data)` instead of the current shallow merge; keep the existing `FileReader.onerror` → `'Could not read the file.'` and a `JSON.parse` failure → `'This file is not valid JSON.'`; let `SchemaError` messages surface as-is (satisfies AC2's "specific error message").
+5. [x] Update `src/store/resume.ts`: add `version: 1`, `migrate: (persisted, version) => version < 1 ? { resume: repairResumeData((persisted as { resume?: unknown })?.resume) } : persisted as { resume: ResumeData }`.
+6. [x] Update `src/store/settings.ts` and the `useAi` store in `AiPanel.tsx`: add `version: 1` + small lenient Zod schemas + `migrate` following the same pattern, scoped to their flat shapes.
+7. [x] Write `src/lib/schema.test.ts`: valid payload passes through unchanged; missing ids repaired (both strict and lenient); wrong-typed field throws `SchemaError` with a message that names the field (strict) vs. silently defaults (lenient); unknown top-level and item-level keys stripped.
+8. [x] Extend `src/lib/file.test.ts` per spec AC1/AC2/AC4: missing-id import succeeds with generated ids; `skills: "foo"`-style payload rejected with a specific (non-generic) message; export→import round-trip is deep-equal for the sample resume.
+9. [x] Extend `src/store/resume.test.ts`: simulate a pre-version localStorage payload (raw object matching the old un-versioned shape, including a malformed field) and confirm `migrate` produces a fully valid `ResumeData` without throwing — proves AC3 + AC5.
+10. [x] Add light migration tests for settings/`useAi` stores (versionless payload → valid v1 state).
+11. [x] Run `npm run lint && npm run build && npm test` — all green. Confirm bundle size increase from adding Zod is reported in review.md (informational, not a gate).
 
 ## Risk register
 | Risk / landmine | Mitigation |
@@ -83,4 +83,22 @@ strict/lenient split almost for free from one schema definition.
   message (not the old generic one).
 
 ## Deviations
-*(filled during build)*
+- Extracted each store's inline `migrate` closure into a named exported function
+  (`migrateResumeState`, `migrateSettingsState`, `migrateAiState`) rather than an inline
+  arrow function in the `persist()` config. Not specified in the plan, but necessary for
+  direct unit testing (steps 9-10) without reverse-engineering zustand's persist/localStorage
+  internals in tests. `useAi` itself stays private to `AiPanel.tsx` per the out-of-scope
+  constraint — only the migrate function is exported.
+- `importResumeJson`'s `JSON.parse` failure now returns `'This file is not valid JSON.'`
+  instead of reusing the generic `'This file is not a valid resume JSON export.'` message
+  (schema-validation failures use the latter, or `SchemaError`'s specific message). This is
+  a direct consequence of AC2 ("specific error message") and was implicit in the plan's
+  step 4 wording but not called out as changing an F-001 test — updated
+  `file.test.ts`'s "rejects invalid JSON" test to match the more specific message.
+- `oxlint`'s `react/only-export-components` now warns (not errors) on `AiPanel.tsx` for
+  the new `migrateAiState` export — pre-existing non-blocking pattern in this file
+  (Living Product Map §3.6), not a new problem introduced, but worth a mention since it's
+  a new warning that wasn't there before.
+- Bundle size: 245.42 kB → 312.94 kB raw (75.71 kB → 93.60 kB gzip) after adding Zod —
+  a ~27%/~24% increase. Not flagged as disproportionate (Zod is a full runtime validation
+  library covering all 7 resume sections), but noted per the risk register.
