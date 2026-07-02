@@ -6,6 +6,16 @@ body,
   height: 100%;
 }
 
+.print-avoid-break {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.print-avoid-break-after {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
 @media print {
   @page {
     size: A4;
