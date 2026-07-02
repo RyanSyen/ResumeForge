@@ -91,12 +91,56 @@ npm run build  → tsc -b && vite build — success, no errors
 npm test       → 73/73 passed (8 test files)
 ```
 
+## Human manual print pass — 2026-07-03 (round 1) — REGRESSION FOUND
+
+Human ran step 2 of the script above (Modern template, sample 1-page resume, Chrome
+"Save to PDF"). Result: **FAIL** — print output did not match `main`'s print output.
+Confirmed via a direct A/B: `main` branch prints correctly; this feature branch did
+not, at the same step — a genuine regression, not a pre-existing/unrelated issue.
+
+Symptoms observed:
+- With the print dialog's default "Background graphics" off: the sidebar's colored
+  background and forced-white text were invisible (white-on-unprinted-white) —
+  this part is a **pre-existing** Chrome/Edge default (backgrounds don't print unless
+  the user opts in), unrelated to this diff, not counted as a regression.
+- With "Background graphics" enabled: the sidebar background became visible, but its
+  **position was still wrong** — content was shifted/misplaced compared to `main`'s
+  correct output.
+
+### Root cause
+
+`Preview.tsx` added `className="relative"` to `#preview-zoom` (Step 8 — needed so the
+new on-screen break-line overlays position correctly against it). This made
+`#preview-zoom` a new, closer CSS containing block for `#resume-page`'s
+`position: absolute; left: 0; top: 0` rule in `@media print`. Previously that rule
+resolved against a further-out positioned ancestor; now it resolves against
+`#preview-zoom` instead — which, at print time, still sits wherever the app's normal
+(now-invisible-but-still-layout-occupying) centered/padded flex chrome places it, not
+the true page origin. Net effect: the whole resume page is offset from where it should
+print.
+
+This was missed by the Step 1 build-time investigation because that check only tested
+whether `position: absolute` alone blocked multi-page overflow (it doesn't) — it
+didn't test the interaction with the new `relative` ancestor added later in the same
+build, since that ancestor didn't exist yet at Step 1's investigation time.
+
+### Fix
+
+`source_code/src/index.css` — added `position: static !important` to `#preview-zoom`
+inside the existing `@media print` block, resetting it back to the original
+positioning chain at print time only. On-screen `position: relative` (needed for the
+break-line overlays) is untouched — verified via `getComputedStyle` showing `relative`
+outside of print media. Commit `10de592`. `npm run lint/build/test` all still green
+(73/73 tests).
+
+**Not yet re-verified in a real browser** — this fix is reasoned from the CSS
+containing-block mechanics above (this session's tooling still can't render real
+print output), so it needs the same manual pass repeated to confirm the position is
+now correct, before proceeding to Gate 2.
+
 ### Outstanding before Gate 2
 
-AC2/AC3/AC4-export-half require a real-browser print pass (script above) — this is
-exactly the "print output can't be asserted in jsdom" gap the spec's own Test
-expectations called out, now additionally blocked by this session's non-rendering
-preview tab for the *live preview* portions too (though those were separately
-confirmed via the click-triggered workaround above, which reads real, unmocked DOM
-layout). Recommend the human run the script before merging, or explicitly waive if
-acceptable given the strength of the CSS-only approach and unit-test coverage.
+Re-run the manual verification script above (at minimum step 2: Modern template,
+1-page, Chrome, background graphics on/off) to confirm the position-reset fix
+actually corrects the output, then continue through the full 18-cell matrix
+(2 browsers × {1,2,3} pages × 3 templates) for AC2/AC3/AC4-export-half.
