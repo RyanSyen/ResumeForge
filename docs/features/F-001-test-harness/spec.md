@@ -1,7 +1,7 @@
 ---
 id: F-001
 title: Test harness & pipeline safety net
-status: specced
+status: building
 priority: P0
 source: Pipeline prerequisite (PIPELINE.md stage 4) + Living Product Map §3 debt item 8
 depends_on: []
