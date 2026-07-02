@@ -60,7 +60,7 @@ export async function generateContent(prompt: string, opts: GeminiOptions = {}):
   return text
 }
 
-function parseJson<T>(text: string): T {
+export function parseJson<T>(text: string): T {
   const cleaned = text
     .trim()
     .replace(/^```(?:json)?\s*/i, '')

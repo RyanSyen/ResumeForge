@@ -14,6 +14,8 @@ npm-debug.log*
 *.local
 .claude/settings.local.json
 
+.claude/scheduled_tasks.lock
+
 # Editor / OS
 .vscode/*
 !.vscode/extensions.json
