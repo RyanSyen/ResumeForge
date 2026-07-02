@@ -51,19 +51,19 @@ regions have poor evergreen-browser support for this use case.
 
 ## Steps
 Ordered, each independently verifiable. Check off during build.
-1. [ ] Manual, before writing code: in a real browser, confirm whether removing `position: absolute !important` from `#resume-page` in `@media print` still produces correct single-page output, and whether that rule is what's preventing multi-page flow today. Determines if Step 6 is a simplification or leaves the rule in place.
-2. [ ] Create `src/lib/pagination.ts`: `PAGE_HEIGHT_PX` (297mm → px at 96dpi, precise float, documented derivation), `normalizeHeight(observedHeightPx, zoom)`, `computePageCount(contentHeightPx)`, `computePageBreakOffsets(contentHeightPx)`. No DOM/React/zoom coupling — plain numbers in, plain numbers out.
-3. [ ] Write `src/lib/pagination.test.ts` against Step 2 (see Test plan) before wiring up the DOM side.
-4. [ ] Update `src/index.css`: add global `break-inside: avoid` / `page-break-inside: avoid` utility class(es) and `break-after: avoid` / `page-break-after: avoid` for headings.
-5. [ ] Update `src/components/preview/templates.tsx`: apply the break-control class to each section wrapper in all three templates and to each item-level div inside the six shared body components; apply heading break-after class to section headings.
-6. [ ] Update `src/index.css` `@media print` block per Step 1's finding: keep `visibility` hiding of non-resume UI, keep `@page { size: A4; margin: 0 }`, keep `zoom: 1 !important` reset on `#preview-zoom`; adjust `#resume-page` positioning only if Step 1 showed it's necessary/harmful.
-7. [ ] Add `src/components/preview/usePageCount.ts`: `ResizeObserver` on `#resume-page`, re-measure on resume-data/template/window-resize changes (not on zoom changes), normalize via `normalizeHeight`, call `computePageCount`/`computePageBreakOffsets`.
-8. [ ] Update `src/components/preview/Preview.tsx`: wire the hook; render break-line overlays and "Page N of M" indicator inside `#preview-zoom` (so they scale visually with existing zoom), all carrying `print:hidden`.
-9. [ ] Manual: verify break lines align with real content breaks at multiple zoom levels (40%–150%) and resume lengths (1/2/3 pages) across all three templates, using the browser preview.
-10. [ ] Manual: print-preview (Ctrl+P / print-to-PDF) pass in Chrome and Edge for 1/2/3-page resumes across all three templates — confirm no orphaned headings, no split item cards. If pagination cannot be made correct via CSS alone, stop and escalate per the Approach section rather than substituting a PDF library.
-11. [ ] Manual: confirm 1-page resumes are visually/structurally unchanged from current export output (AC3) — side-by-side or screenshot diff against pre-change baseline.
-12. [ ] Record the manual verification matrix (2 browsers × 3 page-counts × 3 templates = 18 cells) in `docs/features/F-003-multipage-pdf-export/review.md`, noting any residual issues per cell.
-13. [ ] Run `npm run lint && npm run build && npm test` — all green.
+1. [x] Manual, before writing code: in a real browser, confirm whether removing `position: absolute !important` from `#resume-page` in `@media print` still produces correct single-page output, and whether that rule is what's preventing multi-page flow today. Determines if Step 6 is a simplification or leaves the rule in place.
+2. [x] Create `src/lib/pagination.ts`: `PAGE_HEIGHT_PX` (297mm → px at 96dpi, precise float, documented derivation), `normalizeHeight(observedHeightPx, zoom)`, `computePageCount(contentHeightPx)`, `computePageBreakOffsets(contentHeightPx)`. No DOM/React/zoom coupling — plain numbers in, plain numbers out.
+3. [x] Write `src/lib/pagination.test.ts` against Step 2 (see Test plan) before wiring up the DOM side.
+4. [x] Update `src/index.css`: add global `break-inside: avoid` / `page-break-inside: avoid` utility class(es) and `break-after: avoid` / `page-break-after: avoid` for headings.
+5. [x] Update `src/components/preview/templates.tsx`: apply the break-control class to each section wrapper in all three templates and to each item-level div inside the six shared body components; apply heading break-after class to section headings.
+6. [x] Update `src/index.css` `@media print` block per Step 1's finding: keep `visibility` hiding of non-resume UI, keep `@page { size: A4; margin: 0 }`, keep `zoom: 1 !important` reset on `#preview-zoom`; adjust `#resume-page` positioning only if Step 1 showed it's necessary/harmful.
+7. [x] Add `src/components/preview/usePageCount.ts`: `ResizeObserver` on `#resume-page`, re-measure on resume-data/template/window-resize changes (not on zoom changes), normalize via `normalizeHeight`, call `computePageCount`/`computePageBreakOffsets`.
+8. [x] Update `src/components/preview/Preview.tsx`: wire the hook; render break-line overlays and "Page N of M" indicator inside `#preview-zoom` (so they scale visually with existing zoom), all carrying `print:hidden`.
+9. [ ] Manual: verify break lines align with real content breaks at multiple zoom levels (40%–150%) and resume lengths (1/2/3 pages) across all three templates, using the browser preview. **Deferred to /pipeline-review** — see Deviations.
+10. [ ] Manual: print-preview (Ctrl+P / print-to-PDF) pass in Chrome and Edge for 1/2/3-page resumes across all three templates — confirm no orphaned headings, no split item cards. If pagination cannot be made correct via CSS alone, stop and escalate per the Approach section rather than substituting a PDF library. **Deferred to /pipeline-review** — see Deviations.
+11. [ ] Manual: confirm 1-page resumes are visually/structurally unchanged from current export output (AC3) — side-by-side or screenshot diff against pre-change baseline. **Deferred to /pipeline-review** — see Deviations.
+12. [ ] Record the manual verification matrix (2 browsers × 3 page-counts × 3 templates = 18 cells) in `docs/features/F-003-multipage-pdf-export/review.md`, noting any residual issues per cell. **Deferred to /pipeline-review** — per `docs/pipeline/PIPELINE.md`, `review.md` is stage 4's output, not stage 3's.
+13. [x] Run `npm run lint && npm run build && npm test` — all green.
 
 ## Risk register
 | Risk / landmine | Mitigation |
@@ -92,4 +92,42 @@ Ordered, each independently verifiable. Check off during build.
   `@page`/`break-inside`/print media at all.
 
 ## Deviations
-*(filled during build — every departure from the approved steps, with why)*
+- **Step 1 finding**: confirmed empirically in a live browser preview (Chromium via the
+  preview tool) — `html`/`body`/`#root` all have `overflow: visible`, and the scroll
+  container already carries `print:overflow-visible`. No ancestor clips overflow, so
+  `#resume-page`'s `position: absolute !important` in `@media print` does not block
+  multi-page print flow (it repositions the page to the origin; it doesn't add
+  `overflow: hidden` or a fixed `height`). Decision: left the print-CSS positioning
+  unchanged; Step 6 was a no-op beyond adding the new break-control rules (Step 4).
+- **Measurement source changed mid-implementation**: empirically verified (same live
+  preview) that in this Chromium build, `Element.scrollHeight` is *already*
+  zoom-invariant (unaffected by an ancestor's CSS `zoom`), while
+  `getBoundingClientRect().height` scales with zoom as the `zoom` property's spec
+  intends. Relying on `scrollHeight`'s zoom-invariance would be a Chromium-specific
+  quirk, not a cross-browser guarantee — and the spec explicitly flags Firefox's `zoom`
+  behavior as inconsistent. `usePageCount` therefore measures via
+  `getBoundingClientRect().height` and divides by the live `zoom` through
+  `normalizeHeight`, matching the plan's original zoom-independence design rather than
+  depending on an unverified cross-browser assumption.
+- **`computeCurrentPage` added** (`src/lib/pagination.ts`, not in the original plan):
+  AC1 says the indicator must read "Page N of M," which implies a live current-page
+  number, not a static "Page 1." Added a small pure function
+  `computeCurrentPage(scrollTopPx, pageCount)` plus an `onScroll` handler on the preview's
+  scroll container in `Preview.tsx` to track it. Covered by 4 additional unit tests in
+  `pagination.test.ts`.
+- **Steps 9–12 (manual print/zoom verification, `review.md`) deferred to
+  `/pipeline-review`**: two reasons. (1) Per `docs/pipeline/PIPELINE.md`, `review.md` is
+  stage 4 REVIEW's output, not stage 3 BUILD's — F-002 followed the same split. (2) This
+  session's browser-preview tool had a non-rendering tab for this run (`requestAnimationFrame`
+  and `preview_screenshot` never resolved, so `ResizeObserver` never fired either) —
+  confirmed via direct empirical test, not assumed. Pagination math was verified via unit
+  tests instead (`pagination.test.ts`, 14 cases) and a jsdom render test with a mocked
+  `ResizeObserver` (`Preview.test.tsx`, 2 cases) asserting the indicator/break-line
+  markup and its `print:hidden` class. Actual print-engine behavior (break-inside
+  enforcement, orphan control, 1-page pixel parity) still needs a real Chrome/Edge print
+  pass before Gate 2 — this is exactly what the plan's Test plan already called
+  "not automatable in jsdom," so nothing here is new risk, just later verification than
+  originally sequenced.
+- Created a project-root `.claude/launch.json` (mirroring `source_code/.claude/launch.json`
+  but with `npm --prefix source_code run dev`) so the preview tool could start the dev
+  server from the repo root. Tooling config only, not part of the shipped app.

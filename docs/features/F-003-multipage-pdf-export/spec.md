@@ -1,7 +1,7 @@
 ---
 id: F-003
 title: Multi-page support & reliable PDF export
-status: building
+status: in-review
 priority: P1
 source: Must-Have Core MVP Features §Reliable export, §Live visual preview
 depends_on: [F-001]
