@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Basics, ListKey, ResumeData, SectionKey } from '../types'
 import { emptyResume, sampleResume } from '../data/sample'
+import { repairResumeData } from '../lib/schema'
 
 type ListItemOf<K extends ListKey> = ResumeData[K][number]
 
@@ -18,6 +19,12 @@ interface ResumeStore {
   toggleSection: (key: SectionKey) => void
   loadSample: () => void
   reset: () => void
+}
+
+export function migrateResumeState(persisted: unknown, version: number): { resume: ResumeData } {
+  if (version >= 1) return persisted as { resume: ResumeData }
+  const resume = (persisted as { resume?: unknown } | undefined)?.resume
+  return { resume: repairResumeData(resume) }
 }
 
 export const useResume = create<ResumeStore>()(
@@ -86,10 +93,12 @@ export const useResume = create<ResumeStore>()(
       loadSample: () => set({ resume: sampleResume() }),
       reset: () => set({ resume: emptyResume() }),
     }),
-    { name: 'resume-builder:resume' },
+    {
+      name: 'resume-builder:resume',
+      version: 1,
+      migrate: migrateResumeState,
+    },
   ),
 )
 
-export function newId(): string {
-  return crypto.randomUUID()
-}
+export { newId } from '../lib/id'

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { useResume, newId } from './resume'
+import { useResume, newId, migrateResumeState } from './resume'
 import { emptyResume, sampleResume } from '../data/sample'
 import type { ResumeData } from '../types'
 
@@ -125,5 +125,30 @@ describe('loadSample', () => {
   it('loads the sample resume', () => {
     useResume.getState().loadSample()
     expect(useResume.getState().resume).toEqual(sampleResume())
+  })
+})
+
+describe('migrateResumeState', () => {
+  it('passes through unchanged when already at the current version', () => {
+    const state = { resume: sampleResume() }
+    expect(migrateResumeState(state, 1)).toBe(state)
+  })
+
+  it('repairs a versionless payload (pre-F-002 localStorage shape) without data loss', () => {
+    const legacy = { resume: sampleResume() }
+    const result = migrateResumeState(legacy, 0)
+    expect(result.resume).toEqual(sampleResume())
+  })
+
+  it('never throws on a malformed versionless payload, yielding a valid resume', () => {
+    const malformed = { resume: { basics: { fullName: 'Jane' }, skills: 'not an array' } }
+    const result = migrateResumeState(malformed, 0)
+    expect(result.resume.basics.fullName).toBe('Jane')
+    expect(result.resume.skills).toEqual([])
+  })
+
+  it('produces a fully valid empty resume when persisted state is missing entirely', () => {
+    const result = migrateResumeState(undefined, 0)
+    expect(result.resume).toEqual(emptyResume())
   })
 })

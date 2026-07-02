@@ -1,7 +1,7 @@
 ---
 id: F-002
 title: Data model hardening — schema validation + persist versioning
-status: planned
+status: ship-approved
 priority: P0
 source: Must-Have Core MVP Features §Structured resume data model; Living Product Map §3 debt items 3, 9
 depends_on: [F-001]
@@ -30,11 +30,11 @@ I never lose work to a schema change or a bad JSON file.
   out of `AiPanel.tsx` (do it only if adding `version` there forces it).
 
 ## Acceptance criteria
-1. [ ] Importing JSON with items missing `id`s succeeds and every item ends up with a valid unique id.
-2. [ ] Importing JSON with wrong-typed fields (e.g. `skills: "foo"`) is rejected with a specific error message, resume state untouched.
-3. [ ] All three persisted stores have `version: 1` and a `migrate` function; hydrating a pre-version payload yields a valid current-shape state.
-4. [ ] Round-trip: export → import produces deep-equal `ResumeData`.
-5. [ ] Existing users' localStorage (current shape, no version key) hydrates without data loss.
+1. [x] Importing JSON with items missing `id`s succeeds and every item ends up with a valid unique id.
+2. [x] Importing JSON with wrong-typed fields (e.g. `skills: "foo"`) is rejected with a specific error message, resume state untouched.
+3. [x] All three persisted stores have `version: 1` and a `migrate` function; hydrating a pre-version payload yields a valid current-shape state.
+4. [x] Round-trip: export → import produces deep-equal `ResumeData`.
+5. [x] Existing users' localStorage (current shape, no version key) hydrates without data loss.
 
 ## Constraints & landmines
 - "Applied" detection in `AiPanel.tsx` is value-equality — validation must not normalize/reorder
