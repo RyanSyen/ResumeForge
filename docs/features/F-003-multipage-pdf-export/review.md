@@ -138,9 +138,54 @@ containing-block mechanics above (this session's tooling still can't render real
 print output), so it needs the same manual pass repeated to confirm the position is
 now correct, before proceeding to Gate 2.
 
+## Human manual print pass — 2026-07-03 (round 2) — SECOND ISSUE FOUND
+
+Human tested a forced multi-page (2+ page) resume after round 1's positioning fix.
+The `break-after: avoid` heading protection worked correctly (Work Experience moved
+as a whole unit to page 2 instead of being split), but surfaced a second, separate
+issue: **inconsistent header/footer spacing between physical pages** — page 1 had a
+large trailing blank gap before the break, and page 2 started with different
+top-of-page spacing than page 1's top.
+
+### Root cause
+
+`@page { margin: 0 }` (unchanged since before F-003) means the browser adds zero
+whitespace to every physical page boundary. The templates' own top/bottom breathing
+room comes from a one-time Tailwind padding class (`p-6`/`p-7`/`p-8`) applied once to
+the continuously-flowing content box — page 1 gets it because the box's own padding
+sits at its very top edge, but page 2+ (a new physical sheet mid-flow) gets no
+equivalent, since pagination doesn't re-apply that padding per page. This bug already
+existed on `main` before F-003, but F-003 is the first feature to make multi-page
+print output a first-class, user-facing concern, so it's fixed here (in scope per
+spec's "print CSS made robust for N pages").
+
+### Fix
+
+`source_code/src/index.css` — changed `@page { margin: 0 }` to
+`@page { margin: 12mm 15mm; }` so every physical page automatically gets the same
+top/bottom/left/right breathing room from the browser, independent of where content
+happens to break. Templates' own internal padding is untouched (still provides
+breathing room within colored/bordered boxes, e.g. the Modern template's sidebar —
+a separate concern from page-edge margin). Commit `763584b`.
+`npm run lint/build/test` all still green (73/73 tests).
+
+**Risk flagged, not yet re-verified**: `#resume-page`'s print override still forces
+`width: 210mm !important` (added when `@page margin` was `0`, so the printable area
+exactly matched the full A4 size). With a nonzero `@page margin: 12mm 15mm`, the
+printable content area is narrower than 210mm — if `#resume-page`'s containing block
+during print resolves to that margin-reduced area, the forced `210mm` width could now
+overflow/clip horizontally by up to ~30mm. This wasn't corrected preemptively because
+the exact containing-block resolution for a paginated, absolutely-positioned element
+in Chromium's print engine can't be confirmed without a live render (this session's
+preview tooling still can't produce one — confirmed again this round via a
+port-forwarding mismatch in the automated preview tool, unrelated to the app itself).
+
 ### Outstanding before Gate 2
 
-Re-run the manual verification script above (at minimum step 2: Modern template,
-1-page, Chrome, background graphics on/off) to confirm the position-reset fix
-actually corrects the output, then continue through the full 18-cell matrix
-(2 browsers × {1,2,3} pages × 3 templates) for AC2/AC3/AC4-export-half.
+Re-run the manual verification script, specifically checking for:
+1. Consistent top/bottom spacing on every physical page (round 2's original ask).
+2. **New**: no horizontal clipping/overflow — confirm the resume content doesn't run
+   off the right edge or get cut short now that a real page margin is in effect.
+
+Then continue through the full 18-cell matrix (2 browsers × {1,2,3} pages ×
+3 templates) for AC2/AC3/AC4-export-half.
