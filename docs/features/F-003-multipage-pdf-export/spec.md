@@ -30,10 +30,10 @@ matches exactly what I saw.
   per-template page-break customization; headers/footers/page numbers on the PDF.
 
 ## Acceptance criteria
-1. [ ] A resume with 2+ pages of content shows a page-break line and "Page N of M" in the preview.
-2. [ ] Printed/exported PDF of a 2-page resume: no section heading orphaned at a page bottom, no item card split mid-bullet, in all 3 templates.
-3. [ ] 1-page resumes export pixel-identical to current behavior (no regression).
-4. [ ] Preview zoom does not affect pagination or export output.
+1. [x] A resume with 2+ pages of content shows a page-break line and "Page N of M" in the preview.
+2. [ ] Printed/exported PDF of a 2-page resume: no section heading orphaned at a page bottom, no item card split mid-bullet, in all 3 templates. *(print output — needs a real browser print pass, see review.md)*
+3. [ ] 1-page resumes export pixel-identical to current behavior (no regression). *(print output — needs a real browser print pass, see review.md)*
+4. [ ] Preview zoom does not affect pagination or export output. *(preview half confirmed live; export half needs a real browser print pass, see review.md)*
 
 ## Constraints & landmines
 - Print CSS block (§3.2): any new floating UI (page indicators) must carry `print:hidden`.
