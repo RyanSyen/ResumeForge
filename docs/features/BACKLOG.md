@@ -19,7 +19,7 @@ backend features are a later milestone.*
 | ID | Feature | Priority | Status | Depends on |
 |----|---------|----------|--------|------------|
 | F-001 | Test harness & pipeline safety net | P0 | done | — |
-| F-002 | Data model hardening (schema validation + persist versioning) | P0 | planned (awaiting Gate 1) | F-001 |
+| F-002 | Data model hardening (schema validation + persist versioning) | P0 | building | F-001 |
 | F-003 | Multi-page support & reliable PDF export | P1 | specced | F-001 |
 | F-004 | Resume import (PDF/DOCX → structured data) | P1 | specced | F-002 |
 | F-005 | Custom sections | P1 | specced | F-002 |

@@ -1,6 +1,6 @@
 # F-002 — Implementation Plan
 
-*Status: draft · Approved by: — · Date: —*
+*Status: approved · Approved by: Ryan · Date: 2026-07-03*
 
 ## Approach
 Add `zod@^4.4.3` (verified current registry version, TS 6.0.2-compatible, no peer
