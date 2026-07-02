@@ -1,7 +1,7 @@
 ---
 id: F-002
 title: Data model hardening — schema validation + persist versioning
-status: in-review
+status: ship-approved
 priority: P0
 source: Must-Have Core MVP Features §Structured resume data model; Living Product Map §3 debt items 3, 9
 depends_on: [F-001]

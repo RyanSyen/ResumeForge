@@ -69,3 +69,40 @@ No CI-observation gap to carry forward this time.
 
 ### Verdict (Stage 4)
 No blocking findings. Proceeding to Stage 5 (Opus finalize).
+
+## Final gate (Opus) — 2026-07-03
+
+**VERDICT: SHIP**
+
+Independent verification (fresh context, no implementation history): `npm run lint`
+(1 pre-existing disclosed warning), `npm run build`, `npm test` (58 passing) all
+re-run and green. Ran `madge` to independently confirm no circular imports —
+the `id.ts` extraction achieved its purpose.
+
+**Acceptance criteria — all 5 confirmed, with adversarial probing beyond a surface
+re-read:**
+1. AC1 — missing/blank-id repair genuinely succeeds in both schema paths, distinct
+   ids assigned to multiple items.
+2. AC2 — specifically probed the nested-field concern flagged in the review brief:
+   `basics.email: 123` correctly **rejects** (not silently repaired) — `.partial()`
+   does not weaken per-key type checks, confirming the strict/lenient split holds at
+   the nested-field level, not just top-level.
+3. AC3 — verified the migrate version comparison directly: `version >= 1` passthrough,
+   `version < 1` repair, no off-by-one; versionless zustand payloads hydrate as v0.
+4. AC4 — round-trip confirmed lossless; Zod does not reorder keys or mutate valid data.
+5. AC5 — legacy localStorage migration preserves valid data, isolates malformed fields.
+
+**Landmine check (§3.5 Applied/value-equality):** directly tested — a valid
+`TailorResult` survives `repairAiData` byte-identical (`JSON.stringify` equal,
+newlines preserved, highlight order preserved). Confirmed safe.
+
+**Out-of-scope respected:** `ResumeData` shape unchanged, no new UI, `useAi` stays
+private to `AiPanel.tsx`. Deviations (named migrate exports, JSON-error message split)
+reviewed as reasonable, not scope creep.
+
+**Non-blocking note for future features:** the lenient repair schema's `.catch()`
+granularity is per-top-level-field — one corrupt sibling item drops the whole array
+to `[]` rather than repairing just that item; one bad nested `basics` key drops all
+of `basics`. Matches the plan's documented design, only affects recovery from
+already-corrupt localStorage (never user-facing import, never throws). Worth revisiting
+if finer-grained recovery is ever needed — not a blocker now.
