@@ -51,3 +51,33 @@ this gets verified naturally when Gate 2 opens a PR/merges.
 ### Verdict (Stage 4)
 No blocking findings. Proceeding to Stage 5 (Opus finalize) with the CI-on-GitHub gap
 carried forward as a flagged item for the human at Gate 2, not a build blocker.
+
+## Final gate (Opus) — 2026-07-02
+
+**VERDICT: SHIP**
+
+Independent verification (fresh context, no implementation history), run by the reviewer itself:
+- `npm run lint` → clean; `npm run build` → succeeded, 245 kB bundle; `npm test` → 27/27 passed.
+- Repeated the deliberate red-run independently (mutated a `parseJson` assertion — 4 tests
+  failed, `vitest run` exited non-zero — reverted, confirmed clean tree). AC-5 holds.
+
+**Acceptance criteria:** all 5 confirmed met. Specifically checked and confirmed correct:
+`moveItem`/`moveSection` edge no-ops against the real `DEFAULT_ORDER` and swap logic;
+`parseJson` fenced/prose/unparseable cases against the actual source (brace-slicing,
+exact error string); `file.test.ts` `it.each` non-object fixtures are not tautological —
+each reaches the real validation guard in `file.ts`; `parseJson` export confirmed
+non-behavioral (single internal caller only).
+
+**Out-of-scope / landmines:** no scope creep — sole production change is the `export`
+keyword on `parseJson`. No Living Product Map §3 landmine touched (no production logic
+changed).
+
+**Non-blocking notes for future features:**
+- `.oxlintrc.json`'s `ignorePatterns` is not actually honored by oxlint for `.test.ts` —
+  currently inert because lint has zero findings anyway. Worth a real fix (or removal of
+  the false assumption) whenever oxlint's actual ignore mechanism is confirmed — track as
+  a small follow-up, not a blocker.
+- `setResume` test asserts a shallow-merge behavior (weaker than `file.ts`'s deep merge)
+  but only asserts fields valid under that real behavior — no false-pass risk.
+- CI-on-GitHub still not observed green (no PR opened yet — `gh` unauthenticated in this
+  environment). Recommend `gh auth login` then opening the PR before/at merge.
