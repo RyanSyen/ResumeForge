@@ -5,9 +5,11 @@
 export const PAGE_HEIGHT_PX = (297 * 96) / 25.4
 
 /**
- * CSS `zoom` scales rendered pixel measurements (getBoundingClientRect/scrollHeight)
- * on descendants. Dividing by the live zoom factor recovers the unscaled height so
- * pagination math stays correct at any zoom level.
+ * CSS `zoom` on an ancestor scales a descendant's `getBoundingClientRect()` (confirmed
+ * empirically; `scrollHeight` was NOT affected in Chromium, but that's an
+ * implementation quirk, not a spec guarantee — measure via getBoundingClientRect and
+ * normalize here instead of relying on it). Dividing by the live zoom factor recovers
+ * the unscaled height so pagination math stays correct at any zoom level.
  */
 export function normalizeHeight(observedHeightPx: number, zoom: number): number {
   return observedHeightPx / zoom
