@@ -29,6 +29,13 @@ body,
   #preview-zoom {
     zoom: 1 !important;
     transform: none !important;
+    /* #preview-zoom is `position: relative` on screen (containing block for the
+       break-line overlays). Reset to static at print time so #resume-page's
+       `position: absolute; left: 0; top: 0` below resolves against the same
+       ancestor it always did, not this closer new containing block — otherwise
+       it anchors to wherever the (invisible but still layout-occupying) app
+       chrome centers this element instead of the true page origin. */
+    position: static !important;
   }
 
   #resume-page,
