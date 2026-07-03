@@ -54,6 +54,51 @@ describe('parseResumeData', () => {
     const payload = { basics: emptyResume().basics, sectionOrder: ['not-a-real-section'] }
     expect(() => parseResumeData(payload)).toThrow(SchemaError)
   })
+
+  it('round-trips a resume with populated customSections unchanged', () => {
+    const sample = sampleResume()
+    expect(sample.customSections.length).toBeGreaterThan(0)
+    expect(parseResumeData(sample)).toEqual(sample)
+  })
+
+  it('repairs a missing item id inside a custom section', () => {
+    const payload = {
+      basics: emptyResume().basics,
+      customSections: [
+        {
+          id: 'cst-1',
+          title: 'Publications',
+          items: [{ title: 'Paper A', subtitle: '', date: '', description: '', bullets: [] }],
+        },
+      ],
+      sectionOrder: [...emptyResume().sectionOrder, 'cst-1'],
+    }
+    const result = parseResumeData(payload)
+    expect(result.customSections[0].items[0].id).toBeTruthy()
+  })
+
+  it('throws a SchemaError naming customSections for a wrong-typed value', () => {
+    const payload = { basics: emptyResume().basics, customSections: 'not an array' }
+    expect(() => parseResumeData(payload)).toThrow(SchemaError)
+    expect(() => parseResumeData(payload)).toThrow(/"customSections"/)
+  })
+
+  it('rejects a sectionOrder entry that is neither a built-in key nor a known custom section id', () => {
+    const payload = {
+      basics: emptyResume().basics,
+      customSections: [{ id: 'cst-1', title: 'Publications', items: [] }],
+      sectionOrder: [...emptyResume().sectionOrder, 'cst-forged'],
+    }
+    expect(() => parseResumeData(payload)).toThrow(SchemaError)
+  })
+
+  it('rejects a hiddenSections entry that is not a known custom section id', () => {
+    const payload = {
+      basics: emptyResume().basics,
+      hiddenSections: ['cst-forged'],
+    }
+    expect(() => parseResumeData(payload)).toThrow(SchemaError)
+  })
 })
 
 describe('repairResumeData', () => {
@@ -91,5 +136,20 @@ describe('repairResumeData', () => {
       experience: [{ company: 'Acme', position: '', location: '', startDate: '', endDate: '', highlights: [] }],
     })
     expect(result.experience[0].id).toBeTruthy()
+  })
+
+  it('falls back to an empty customSections array on garbage input', () => {
+    const result = repairResumeData({ basics: emptyResume().basics, customSections: 'not an array' })
+    expect(result.customSections).toEqual([])
+  })
+
+  it('drops a dangling section id from sectionOrder/hiddenSections instead of throwing', () => {
+    const result = repairResumeData({
+      basics: emptyResume().basics,
+      sectionOrder: [...emptyResume().sectionOrder, 'cst-forged'],
+      hiddenSections: ['cst-forged'],
+    })
+    expect(result.sectionOrder).not.toContain('cst-forged')
+    expect(result.hiddenSections).not.toContain('cst-forged')
   })
 })

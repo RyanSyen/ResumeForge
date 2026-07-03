@@ -85,7 +85,37 @@ const languageShape = {
   fluency: z.string(),
 }
 
-const sectionKeySchema = z.enum(SECTION_KEYS)
+const customSectionItemShape = {
+  id: idField,
+  title: z.string(),
+  subtitle: z.string(),
+  date: z.string(),
+  description: z.string(),
+  bullets: z.array(z.string()),
+}
+
+const customSectionShape = {
+  id: idField,
+  title: z.string(),
+  items: z.array(z.object(customSectionItemShape)).optional().default([]),
+}
+
+const customSectionSchema = z.object(customSectionShape)
+
+/** Every entry in `sectionOrder`/`hiddenSections` must be a built-in key or a known custom section id. */
+function checkSectionIds(
+  data: { sectionOrder?: string[]; hiddenSections?: string[]; customSections: { id: string }[] },
+  ctx: z.RefinementCtx,
+) {
+  const validIds = new Set<string>([...SECTION_KEYS, ...data.customSections.map((cs) => cs.id)])
+  for (const field of ['sectionOrder', 'hiddenSections'] as const) {
+    for (const id of data[field] ?? []) {
+      if (!validIds.has(id)) {
+        ctx.addIssue({ code: 'custom', path: [field], message: `unknown section id "${id}"` })
+      }
+    }
+  }
+}
 
 function fieldError(field: string, expected: string): SchemaError {
   return new SchemaError(`Invalid "${field}": expected ${expected}.`)
@@ -95,21 +125,25 @@ function fieldError(field: string, expected: string): SchemaError {
  * Strict schema: wrong-typed fields fail the parse (caller decides the message).
  * Missing/blank item ids are still repaired here — that is required to succeed, not reject.
  */
-const strictResumeSchema = z.object({
-  basics: z.object(basicsShape).partial().transform((b) => ({ ...emptyResume().basics, ...b })),
-  summary: z.string().optional().default(''),
-  experience: z.array(z.object(experienceShape)).optional().default([]),
-  education: z.array(z.object(educationShape)).optional().default([]),
-  projects: z.array(z.object(projectShape)).optional().default([]),
-  skills: z.array(z.object(skillGroupShape)).optional().default([]),
-  certifications: z.array(z.object(certificationShape)).optional().default([]),
-  languages: z.array(z.object(languageShape)).optional().default([]),
-  sectionOrder: z
-    .array(sectionKeySchema)
-    .optional()
-    .transform((order) => (order && order.length > 0 ? order : emptyResume().sectionOrder)),
-  hiddenSections: z.array(sectionKeySchema).optional().default([]),
-})
+const strictResumeSchema = z
+  .object({
+    basics: z.object(basicsShape).partial().transform((b) => ({ ...emptyResume().basics, ...b })),
+    summary: z.string().optional().default(''),
+    experience: z.array(z.object(experienceShape)).optional().default([]),
+    education: z.array(z.object(educationShape)).optional().default([]),
+    projects: z.array(z.object(projectShape)).optional().default([]),
+    skills: z.array(z.object(skillGroupShape)).optional().default([]),
+    certifications: z.array(z.object(certificationShape)).optional().default([]),
+    languages: z.array(z.object(languageShape)).optional().default([]),
+    customSections: z.array(customSectionSchema).optional().default([]),
+    sectionOrder: z.array(z.string()).optional().default([]),
+    hiddenSections: z.array(z.string()).optional().default([]),
+  })
+  .superRefine(checkSectionIds)
+  .transform((data) => ({
+    ...data,
+    sectionOrder: data.sectionOrder.length > 0 ? data.sectionOrder : emptyResume().sectionOrder,
+  }))
 
 const FIELD_EXPECTATIONS: Record<string, string> = {
   basics: 'an object',
@@ -120,6 +154,7 @@ const FIELD_EXPECTATIONS: Record<string, string> = {
   skills: 'an array',
   certifications: 'an array',
   languages: 'an array',
+  customSections: 'an array of custom sections',
   sectionOrder: 'an array of valid section names',
   hiddenSections: 'an array of valid section names',
 }
@@ -143,25 +178,34 @@ export function repairResumeData(raw: unknown): ResumeData {
   const base = emptyResume()
   const source = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
 
-  const lenientSchema = z.object({
-    basics: z
-      .object(basicsShape)
-      .partial()
-      .catch({})
-      .transform((b) => ({ ...base.basics, ...b })),
-    summary: z.string().catch(base.summary),
-    experience: z.array(z.object(experienceShape)).catch(base.experience),
-    education: z.array(z.object(educationShape)).catch(base.education),
-    projects: z.array(z.object(projectShape)).catch(base.projects),
-    skills: z.array(z.object(skillGroupShape)).catch(base.skills),
-    certifications: z.array(z.object(certificationShape)).catch(base.certifications),
-    languages: z.array(z.object(languageShape)).catch(base.languages),
-    sectionOrder: z
-      .array(sectionKeySchema)
-      .catch(base.sectionOrder)
-      .transform((order) => (order.length > 0 ? order : base.sectionOrder)),
-    hiddenSections: z.array(sectionKeySchema).catch(base.hiddenSections),
-  })
+  const lenientSchema = z
+    .object({
+      basics: z
+        .object(basicsShape)
+        .partial()
+        .catch({})
+        .transform((b) => ({ ...base.basics, ...b })),
+      summary: z.string().catch(base.summary),
+      experience: z.array(z.object(experienceShape)).catch(base.experience),
+      education: z.array(z.object(educationShape)).catch(base.education),
+      projects: z.array(z.object(projectShape)).catch(base.projects),
+      skills: z.array(z.object(skillGroupShape)).catch(base.skills),
+      certifications: z.array(z.object(certificationShape)).catch(base.certifications),
+      languages: z.array(z.object(languageShape)).catch(base.languages),
+      customSections: z.array(customSectionSchema).catch(base.customSections),
+      sectionOrder: z.array(z.string()).catch(base.sectionOrder),
+      hiddenSections: z.array(z.string()).catch(base.hiddenSections),
+    })
+    .transform((data) => {
+      const validIds = new Set<string>([...SECTION_KEYS, ...data.customSections.map((cs) => cs.id)])
+      const sectionOrder = data.sectionOrder.filter((id) => validIds.has(id))
+      const hiddenSections = data.hiddenSections.filter((id) => validIds.has(id))
+      return {
+        ...data,
+        sectionOrder: sectionOrder.length > 0 ? sectionOrder : base.sectionOrder,
+        hiddenSections,
+      }
+    })
 
   return lenientSchema.parse(source) as ResumeData
 }

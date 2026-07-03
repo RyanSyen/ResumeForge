@@ -58,6 +58,21 @@ export interface LanguageItem {
   fluency: string
 }
 
+export interface CustomSectionItem {
+  id: string
+  title: string
+  subtitle: string
+  date: string
+  description: string
+  bullets: string[]
+}
+
+export interface CustomSection {
+  id: string
+  title: string
+  items: CustomSectionItem[]
+}
+
 export type SectionKey =
   | 'summary'
   | 'experience'
@@ -69,6 +84,9 @@ export type SectionKey =
 
 export type ListKey = Exclude<SectionKey, 'summary'>
 
+/** A built-in `SectionKey`, or a `CustomSection.id` — how `sectionOrder`/`hiddenSections` address any section. */
+export type SectionId = SectionKey | string
+
 export interface ResumeData {
   basics: Basics
   summary: string
@@ -78,8 +96,9 @@ export interface ResumeData {
   skills: SkillGroup[]
   certifications: CertificationItem[]
   languages: LanguageItem[]
-  sectionOrder: SectionKey[]
-  hiddenSections: SectionKey[]
+  customSections: CustomSection[]
+  sectionOrder: SectionId[]
+  hiddenSections: SectionId[]
 }
 
 export const SECTION_LABELS: Record<SectionKey, string> = {
