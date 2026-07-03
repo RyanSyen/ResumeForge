@@ -1,7 +1,7 @@
 ---
 id: F-004
 title: Resume import (PDF/DOCX → structured data)
-status: specced
+status: planned
 priority: P1
 source: Must-Have Core MVP Features §Resume import and portability
 depends_on: [F-002]
