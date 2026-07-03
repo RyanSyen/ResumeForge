@@ -89,3 +89,51 @@ None blocking. Finding #3 (duplicate custom-section id, schema-level) is a docum
 unfixed, low-severity theoretical gap with no live trigger — see table above. AI Tailor
 serialization (AC5) is verified via prompt-content assertion rather than a live Gemini
 call, matching F-004's precedent for this BYO-key environment constraint.
+
+## Final gate (Opus) — 2026-07-03
+
+*Cross-model review per `docs/pipeline/PIPELINE.md` stage 5. Fresh Opus session, given
+only the branch diff (`git diff main...feature/F-005-custom-sections`), `spec.md`,
+`plan.md`, and `docs/Living Product Map & Feature Inventory.md` §3 — no implementation
+history, no access to this review's own findings above.*
+
+### Verdict: **SHIP**
+
+> The diff cleanly satisfies all 5 acceptance criteria, respects every "Out" scope
+> boundary, correctly bumps persist v1→v2 with migration tests, and touches no §3
+> landmine. The reviewer's two medium findings (migration id-repair gap,
+> `IMPORT_SCHEMA_TEMPLATE` import-break risk) were both fixed before this diff — the
+> final code routes all pre-v2 payloads through `repairResumeData` and adds no
+> `customSections` to the AI import template.
+
+**Acceptance criteria**: AC1–AC5 all assessed **Pass** with specific file/line evidence
+cited (`CustomSectionEditor.tsx`, `templates.tsx`/`templates.test.tsx`, `resume.ts`
+migration + store tests, `EditorPanel.test.tsx`, `gemini.ts`/`gemini.test.ts`) —
+matching this review's own AC table above.
+
+**Landmine compliance (§3)**: §3.1 (`?key=` query-param) — n/a, no new AI calls added.
+§3.2 (print-CSS/floating UI) — no new floating UI; `CustomSectionBody` reuses the
+`print-avoid-break` idiom, asserted present by `templates.test.tsx`. §3.3 (shallow
+import validation) — strengthened, not weakened, via the new `checkSectionIds`
+cross-field refinement. §3.9 (persist versioning) — `version: 2` bump with dedicated
+migration tests, compliant with CLAUDE.md's mandatory rule.
+
+**Scope discipline**: no creep — fixed generic item shape only (no per-section field
+schemas), `IMPORT_SCHEMA_TEMPLATE` deliberately left unextended, AI rewrite targets
+unchanged (experience-only), move buttons only (no drag-and-drop library).
+
+**Plan adherence**: types, `SectionId` design, store actions, and the `superRefine`
+cross-field schema validation all match the approved plan. The one deviation — routing
+v1 payloads through `repairResumeData` instead of a narrower `migrateV1ToV2` — is
+documented above and is strictly safer than the originally planned approach.
+
+**Notable observations for the human merger** (non-blocking):
+1. Duplicate custom-section id uniqueness is not schema-enforced (finding #3 above,
+   waived) — only reachable via hand-forged JSON, not any UI action.
+2. No prompt-size bound on `resumeToText()`'s custom-section serialization, consistent
+   with the existing built-in sections (no guard there either) — out of scope per plan.
+3. AC5 verified via a mocked prompt-content assertion, not a live Gemini call (BYO-key
+   environment, matching F-004's precedent) — structurally sound, serialization path
+   exercised.
+
+No blockers. Approved to merge.
