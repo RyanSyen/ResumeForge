@@ -2,6 +2,8 @@ import { z } from 'zod'
 import type { ResumeData, SectionKey, TailorResult, TemplateId } from '../types'
 import { emptyResume } from '../data/sample'
 import { newId } from './id'
+import type { FontId, FontSizeId, LineHeightId, SpacingId, MarginId } from './design'
+import type { PageFormatId } from './pageFormats'
 
 export class SchemaError extends Error {
   constructor(message: string) {
@@ -211,12 +213,24 @@ export function repairResumeData(raw: unknown): ResumeData {
 }
 
 const TEMPLATE_IDS: [TemplateId, ...TemplateId[]] = ['modern', 'classic', 'compact']
+const FONT_IDS: [FontId, ...FontId[]] = ['system-sans', 'system-serif', 'inter', 'merriweather', 'roboto-slab', 'lato']
+const FONT_SIZE_IDS: [FontSizeId, ...FontSizeId[]] = ['s', 'm', 'l']
+const LINE_HEIGHT_IDS: [LineHeightId, ...LineHeightId[]] = ['compact', 'normal', 'relaxed']
+const SPACING_IDS: [SpacingId, ...SpacingId[]] = ['compact', 'normal', 'relaxed']
+const MARGIN_IDS: [MarginId, ...MarginId[]] = ['narrow', 'normal', 'wide']
+const PAGE_FORMAT_IDS: [PageFormatId, ...PageFormatId[]] = ['a4', 'letter']
 
 export interface PersistedSettings {
   apiKey: string
   model: string
   template: TemplateId
   accent: string
+  fontFamily: FontId
+  fontSize: FontSizeId
+  lineHeight: LineHeightId
+  sectionSpacing: SpacingId
+  pageMargins: MarginId
+  pageFormat: PageFormatId
 }
 
 export function repairSettingsData(raw: unknown, defaults: PersistedSettings): PersistedSettings {
@@ -225,6 +239,12 @@ export function repairSettingsData(raw: unknown, defaults: PersistedSettings): P
     model: z.string().catch(defaults.model),
     template: z.enum(TEMPLATE_IDS).catch(defaults.template),
     accent: z.string().catch(defaults.accent),
+    fontFamily: z.enum(FONT_IDS).catch(defaults.fontFamily),
+    fontSize: z.enum(FONT_SIZE_IDS).catch(defaults.fontSize),
+    lineHeight: z.enum(LINE_HEIGHT_IDS).catch(defaults.lineHeight),
+    sectionSpacing: z.enum(SPACING_IDS).catch(defaults.sectionSpacing),
+    pageMargins: z.enum(MARGIN_IDS).catch(defaults.pageMargins),
+    pageFormat: z.enum(PAGE_FORMAT_IDS).catch(defaults.pageFormat),
   })
   const source = raw && typeof raw === 'object' ? raw : {}
   return schema.parse(source)
