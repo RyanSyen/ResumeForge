@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ZoomIn, ZoomOut } from 'lucide-react'
 import { useResume } from '../../store/resume'
 import { useSettings } from '../../store/settings'
-import { computeCurrentPage } from '../../lib/pagination'
+import { computeCurrentPage, getPageHeightPx } from '../../lib/pagination'
 import { getDesignCssVars } from '../../lib/design'
 import { getMarginsMm, getPageCssVars, getPageDimensionsMm } from '../../lib/pageFormats'
 import { updatePrintPageStyle } from '../../lib/printStyleInjector'
@@ -51,7 +51,9 @@ export function Preview() {
     <div
       className="relative flex-1 overflow-auto bg-slate-200/70 print:overflow-visible print:bg-white"
       onScroll={(e) =>
-        setCurrentPage(computeCurrentPage(e.currentTarget.scrollTop / zoom, pageCount))
+        setCurrentPage(
+          computeCurrentPage(e.currentTarget.scrollTop / zoom, pageCount, getPageHeightPx(pageFormat)),
+        )
       }
     >
       <div className="fixed bottom-5 right-5 z-10 flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 shadow-md print:hidden">

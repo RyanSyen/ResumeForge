@@ -11,7 +11,7 @@ const DESIGN_DEFAULTS = {
 }
 
 describe('migrateSettingsState', () => {
-  it('passes through unchanged when already at the current version', () => {
+  it('re-validates (not just passes through) a well-formed payload at the current version', () => {
     const state = {
       apiKey: 'abc',
       model: 'gemini-2.5-pro',
@@ -19,7 +19,14 @@ describe('migrateSettingsState', () => {
       accent: '#000',
       ...DESIGN_DEFAULTS,
     }
-    expect(migrateSettingsState(state, 2)).toBe(state)
+    expect(migrateSettingsState(state, 2)).toEqual(state)
+  })
+
+  it('does not let a corrupted v2 payload through unvalidated', () => {
+    const corrupted = { apiKey: 'abc', fontSize: 'huge', pageFormat: 'tabloid' }
+    const result = migrateSettingsState(corrupted, 2)
+    expect(result.fontSize).toBe('m')
+    expect(result.pageFormat).toBe('a4')
   })
 
   it('repairs a v1 payload, preserving the 4 legacy fields and defaulting new design fields', () => {

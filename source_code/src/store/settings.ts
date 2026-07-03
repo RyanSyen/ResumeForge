@@ -58,8 +58,10 @@ const SETTINGS_DEFAULTS: PersistedSettings = {
   ...DESIGN_DEFAULTS,
 }
 
-export function migrateSettingsState(persisted: unknown, version: number): PersistedSettings {
-  if (version >= 2) return persisted as PersistedSettings
+export function migrateSettingsState(persisted: unknown, _version: number): PersistedSettings {
+  // Always validate, even at the current version — a raw passthrough would let a
+  // corrupted v2 payload (partial write, manual localStorage edit) reach the store
+  // unvalidated, e.g. an invalid fontSize silently breaking the CSS variable it drives.
   return repairSettingsData(persisted, SETTINGS_DEFAULTS)
 }
 

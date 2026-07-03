@@ -85,6 +85,13 @@ describe('computeCurrentPage', () => {
     expect(computeCurrentPage(PAGE_HEIGHT_PX * 10, 3)).toBe(3)
   })
 
+  it('uses an explicit non-default pageHeightPx (e.g. US Letter) instead of the A4 constant', () => {
+    const letterHeight = getPageHeightPx('letter')
+    expect(computeCurrentPage(letterHeight + 1, 3, letterHeight)).toBe(2)
+    // Sanity check the two formats disagree — proves the param is actually used.
+    expect(computeCurrentPage(letterHeight + 1, 3)).not.toBe(computeCurrentPage(letterHeight + 1, 3, letterHeight))
+  })
+
   it('clamps to 1 for a single-page document', () => {
     expect(computeCurrentPage(0, 1)).toBe(1)
   })
