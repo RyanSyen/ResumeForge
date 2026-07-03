@@ -4,6 +4,7 @@ import {
   computeCurrentPage,
   computePageBreakOffsets,
   computePageCount,
+  getPageHeightPx,
   normalizeHeight,
 } from './pagination'
 
@@ -51,6 +52,23 @@ describe('normalizeHeight', () => {
     expect(normalizeHeight(1000, 0.5)).toBe(2000)
     expect(normalizeHeight(1000, 1)).toBe(1000)
     expect(normalizeHeight(850, 0.85)).toBe(1000)
+  })
+})
+
+describe('getPageHeightPx', () => {
+  it('returns the A4 page height matching PAGE_HEIGHT_PX', () => {
+    expect(getPageHeightPx('a4')).toBeCloseTo(PAGE_HEIGHT_PX, 5)
+  })
+
+  it('returns a different (shorter) page height for US Letter', () => {
+    expect(getPageHeightPx('letter')).toBeLessThan(getPageHeightPx('a4'))
+  })
+
+  it('computePageCount/computePageBreakOffsets accept an explicit page height for a non-default format', () => {
+    const letterHeight = getPageHeightPx('letter')
+    expect(computePageCount(letterHeight, letterHeight)).toBe(1)
+    expect(computePageCount(letterHeight + 1, letterHeight)).toBe(2)
+    expect(computePageBreakOffsets(letterHeight + 1, letterHeight)).toEqual([letterHeight])
   })
 })
 

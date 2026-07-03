@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { computePageBreakOffsets, computePageCount, normalizeHeight } from '../../lib/pagination'
+import { computePageBreakOffsets, computePageCount, getPageHeightPx, normalizeHeight } from '../../lib/pagination'
+import type { PageFormatId } from '../../lib/pageFormats'
 
-export function usePageCount(pageRef: React.RefObject<HTMLElement | null>, zoom: number) {
+export function usePageCount(pageRef: React.RefObject<HTMLElement | null>, zoom: number, format: PageFormatId) {
   const [contentHeightPx, setContentHeightPx] = useState(0)
 
   useEffect(() => {
@@ -16,8 +17,9 @@ export function usePageCount(pageRef: React.RefObject<HTMLElement | null>, zoom:
     return () => observer.disconnect()
   }, [pageRef, zoom])
 
+  const pageHeightPx = getPageHeightPx(format)
   return {
-    pageCount: computePageCount(contentHeightPx),
-    breakOffsets: computePageBreakOffsets(contentHeightPx),
+    pageCount: computePageCount(contentHeightPx, pageHeightPx),
+    breakOffsets: computePageBreakOffsets(contentHeightPx, pageHeightPx),
   }
 }

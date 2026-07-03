@@ -1,8 +1,16 @@
+import { getPageDimensionsMm, mmToPx, type PageFormatId } from './pageFormats'
+
+/** A4 page height in px at 96dpi — kept for backward-compatible callers/tests. */
+export const PAGE_HEIGHT_PX = mmToPx(297)
+
 /**
- * A4 page height in px at 96dpi: 297mm * 96 / 25.4. Kept as a precise float
- * (not rounded) so page-break offsets don't drift across many pages.
+ * Page height in px for a given format. Print margins are applied by the `@page`
+ * rule at print time (outside this content box), so they don't factor into
+ * on-screen pagination math — only the page format itself does.
  */
-export const PAGE_HEIGHT_PX = (297 * 96) / 25.4
+export function getPageHeightPx(format: PageFormatId): number {
+  return mmToPx(getPageDimensionsMm(format).heightMm)
+}
 
 /**
  * CSS `zoom` on an ancestor scales a descendant's `getBoundingClientRect()` (confirmed
@@ -15,20 +23,27 @@ export function normalizeHeight(observedHeightPx: number, zoom: number): number 
   return observedHeightPx / zoom
 }
 
-export function computePageCount(contentHeightPx: number): number {
-  return Math.max(1, Math.ceil(contentHeightPx / PAGE_HEIGHT_PX))
+export function computePageCount(contentHeightPx: number, pageHeightPx: number = PAGE_HEIGHT_PX): number {
+  return Math.max(1, Math.ceil(contentHeightPx / pageHeightPx))
 }
 
-export function computePageBreakOffsets(contentHeightPx: number): number[] {
-  const pageCount = computePageCount(contentHeightPx)
+export function computePageBreakOffsets(
+  contentHeightPx: number,
+  pageHeightPx: number = PAGE_HEIGHT_PX,
+): number[] {
+  const pageCount = computePageCount(contentHeightPx, pageHeightPx)
   const offsets: number[] = []
   for (let i = 1; i < pageCount; i++) {
-    offsets.push(i * PAGE_HEIGHT_PX)
+    offsets.push(i * pageHeightPx)
   }
   return offsets
 }
 
-export function computeCurrentPage(scrollTopPx: number, pageCount: number): number {
-  const page = Math.floor(scrollTopPx / PAGE_HEIGHT_PX) + 1
+export function computeCurrentPage(
+  scrollTopPx: number,
+  pageCount: number,
+  pageHeightPx: number = PAGE_HEIGHT_PX,
+): number {
+  const page = Math.floor(scrollTopPx / pageHeightPx) + 1
   return Math.min(Math.max(page, 1), pageCount)
 }
