@@ -1,7 +1,7 @@
 ---
 id: F-006
 title: Presentation controls (typography, spacing, page format)
-status: specced
+status: ship-approved
 priority: P1
 source: Must-Have Core MVP Features §Templates and presentation controls
 depends_on: [F-003]
@@ -27,11 +27,11 @@ format are hard-coded per template in `templates.tsx`.
   a full theming/token system (SSOT "structured customization system" is post-MVP).
 
 ## Acceptance criteria
-1. [ ] Every control updates the live preview immediately and survives reload.
-2. [ ] Exported PDF reflects all controls exactly (including US Letter page size via dynamic `@page`).
-3. [ ] Google fonts load with sensible fallbacks; export works offline with system-font fallback.
-4. [ ] Switching templates preserves the user's design settings.
-5. [ ] Reset-to-defaults control exists per the design panel.
+1. [x] Every control updates the live preview immediately and survives reload.
+2. [x] Exported PDF reflects all controls exactly (including US Letter page size via dynamic `@page`).
+3. [x] Google fonts load with sensible fallbacks; export works offline with system-font fallback.
+4. [x] Switching templates preserves the user's design settings.
+5. [x] Reset-to-defaults control exists per the design panel.
 
 ## Constraints & landmines
 - Page format interacts with F-003 pagination math and the `@page { size: A4 }` rule —

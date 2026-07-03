@@ -4,6 +4,7 @@ import {
   computeCurrentPage,
   computePageBreakOffsets,
   computePageCount,
+  getPageHeightPx,
   normalizeHeight,
 } from './pagination'
 
@@ -54,6 +55,23 @@ describe('normalizeHeight', () => {
   })
 })
 
+describe('getPageHeightPx', () => {
+  it('returns the A4 page height matching PAGE_HEIGHT_PX', () => {
+    expect(getPageHeightPx('a4')).toBeCloseTo(PAGE_HEIGHT_PX, 5)
+  })
+
+  it('returns a different (shorter) page height for US Letter', () => {
+    expect(getPageHeightPx('letter')).toBeLessThan(getPageHeightPx('a4'))
+  })
+
+  it('computePageCount/computePageBreakOffsets accept an explicit page height for a non-default format', () => {
+    const letterHeight = getPageHeightPx('letter')
+    expect(computePageCount(letterHeight, letterHeight)).toBe(1)
+    expect(computePageCount(letterHeight + 1, letterHeight)).toBe(2)
+    expect(computePageBreakOffsets(letterHeight + 1, letterHeight)).toEqual([letterHeight])
+  })
+})
+
 describe('computeCurrentPage', () => {
   it('returns 1 at the top of a multi-page document', () => {
     expect(computeCurrentPage(0, 3)).toBe(1)
@@ -65,6 +83,13 @@ describe('computeCurrentPage', () => {
 
   it('clamps to pageCount when scrolled past the last page boundary', () => {
     expect(computeCurrentPage(PAGE_HEIGHT_PX * 10, 3)).toBe(3)
+  })
+
+  it('uses an explicit non-default pageHeightPx (e.g. US Letter) instead of the A4 constant', () => {
+    const letterHeight = getPageHeightPx('letter')
+    expect(computeCurrentPage(letterHeight + 1, 3, letterHeight)).toBe(2)
+    // Sanity check the two formats disagree — proves the param is actually used.
+    expect(computeCurrentPage(letterHeight + 1, 3)).not.toBe(computeCurrentPage(letterHeight + 1, 3, letterHeight))
   })
 
   it('clamps to 1 for a single-page document', () => {

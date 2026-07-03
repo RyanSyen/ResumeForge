@@ -31,4 +31,12 @@ describe.each([
     const sectionEl = heading.closest('.print-avoid-break')
     expect(sectionEl).not.toBeNull()
   })
+
+  it("drives typography from the --rf-font-size-base CSS variable rather than a hardcoded class (F-006)", () => {
+    const { container } = render(<Template {...props} />)
+    const heading = screen.getByText(resume.customSections[0].title)
+    expect(heading.style.fontSize).toContain('var(--rf-font-size-base)')
+    expect(container.querySelector('.font-sans')).toBeNull()
+    expect(container.querySelector('.font-serif')).toBeNull()
+  })
 })
