@@ -40,7 +40,7 @@ function ExperienceBody({ resume, accent }: TemplateProps) {
   return (
     <div className="space-y-3">
       {resume.experience.map((e) => (
-        <div key={e.id}>
+        <div key={e.id} className="print-avoid-break">
           <div className="flex items-baseline justify-between gap-2">
             <span className="text-[13px] font-semibold">{e.position}</span>
             <span className="shrink-0 text-[11px] text-gray-500">{dates(e.startDate, e.endDate)}</span>
@@ -68,7 +68,7 @@ function EducationBody({ resume }: TemplateProps) {
   return (
     <div className="space-y-2">
       {resume.education.map((e) => (
-        <div key={e.id} className="text-[12px]">
+        <div key={e.id} className="print-avoid-break text-[12px]">
           <div className="flex items-baseline justify-between gap-2">
             <span className="font-semibold">{e.institution}</span>
             <span className="shrink-0 text-[11px] text-gray-500">{dates(e.startDate, e.endDate)}</span>
@@ -87,7 +87,7 @@ function ProjectsBody({ resume, accent }: TemplateProps) {
   return (
     <div className="space-y-2">
       {resume.projects.map((p) => (
-        <div key={p.id} className="text-[12px]">
+        <div key={p.id} className="print-avoid-break text-[12px]">
           <span className="font-semibold">{p.name}</span>
           {p.url && (
             <span className="ml-1.5 text-[11px]" style={{ color: accent }}>
@@ -112,7 +112,7 @@ function SkillsBody({ resume }: TemplateProps) {
   return (
     <div className="space-y-1.5">
       {resume.skills.map((g) => (
-        <div key={g.id} className="text-[12px]">
+        <div key={g.id} className="print-avoid-break text-[12px]">
           {g.category && <span className="font-semibold">{g.category}: </span>}
           <span className="text-gray-700">{g.skills.filter((s) => s.trim()).join(', ')}</span>
         </div>
@@ -125,7 +125,7 @@ function CertificationsBody({ resume }: TemplateProps) {
   return (
     <div className="space-y-1">
       {resume.certifications.map((c) => (
-        <div key={c.id} className="text-[12px]">
+        <div key={c.id} className="print-avoid-break text-[12px]">
           <span className="font-semibold">{c.name}</span>
           <span className="text-gray-600">
             {c.issuer && ` — ${c.issuer}`}
@@ -186,8 +186,8 @@ export function ModernTemplate(props: TemplateProps) {
           ))}
         </div>
         {sidebar.map((key) => (
-          <div key={key} className="mt-5">
-            <h2 className="mb-1.5 border-b border-white/30 pb-1 text-[11px] font-bold uppercase tracking-wider">
+          <div key={key} className="print-avoid-break mt-5">
+            <h2 className="print-avoid-break-after mb-1.5 border-b border-white/30 pb-1 text-[11px] font-bold uppercase tracking-wider">
               {SECTION_LABELS[key]}
             </h2>
             <div className="[&_*]:!text-white/90 [&_.font-semibold]:!text-white">
@@ -198,9 +198,9 @@ export function ModernTemplate(props: TemplateProps) {
       </aside>
       <main className="flex-1 p-6">
         {main.map((key) => (
-          <div key={key} className="mb-4">
+          <div key={key} className="print-avoid-break mb-4">
             <h2
-              className="mb-1.5 text-[12px] font-bold uppercase tracking-wider"
+              className="print-avoid-break-after mb-1.5 text-[12px] font-bold uppercase tracking-wider"
               style={{ color: accent }}
             >
               {SECTION_LABELS[key]}
@@ -227,9 +227,9 @@ export function ClassicTemplate(props: TemplateProps) {
         </p>
       </header>
       {orderedSections(resume).map((key) => (
-        <div key={key} className="mt-4">
+        <div key={key} className="print-avoid-break mt-4">
           <h2
-            className="mb-1.5 border-b pb-0.5 text-[13px] font-bold uppercase tracking-widest"
+            className="print-avoid-break-after mb-1.5 border-b pb-0.5 text-[13px] font-bold uppercase tracking-widest"
             style={{ borderColor: accent, color: accent }}
           >
             {SECTION_LABELS[key]}
@@ -264,8 +264,8 @@ export function CompactTemplate(props: TemplateProps) {
       </header>
       <hr className="my-3 border-t-2" style={{ borderColor: accent }} />
       {orderedSections(resume).map((key) => (
-        <div key={key} className="mb-3.5">
-          <h2 className="mb-1 text-[11.5px] font-bold uppercase tracking-wider text-gray-800">
+        <div key={key} className="print-avoid-break mb-3.5">
+          <h2 className="print-avoid-break-after mb-1 text-[11.5px] font-bold uppercase tracking-wider text-gray-800">
             {SECTION_LABELS[key]}
           </h2>
           {sectionBody(key, props)}

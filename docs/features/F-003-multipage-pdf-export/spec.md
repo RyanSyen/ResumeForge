@@ -1,7 +1,7 @@
 ---
 id: F-003
 title: Multi-page support & reliable PDF export
-status: approved
+status: ship-approved
 priority: P1
 source: Must-Have Core MVP Features §Reliable export, §Live visual preview
 depends_on: [F-001]
@@ -30,10 +30,10 @@ matches exactly what I saw.
   per-template page-break customization; headers/footers/page numbers on the PDF.
 
 ## Acceptance criteria
-1. [ ] A resume with 2+ pages of content shows a page-break line and "Page N of M" in the preview.
-2. [ ] Printed/exported PDF of a 2-page resume: no section heading orphaned at a page bottom, no item card split mid-bullet, in all 3 templates.
-3. [ ] 1-page resumes export pixel-identical to current behavior (no regression).
-4. [ ] Preview zoom does not affect pagination or export output.
+1. [x] A resume with 2+ pages of content shows a page-break line and "Page N of M" in the preview.
+2. [x] Printed/exported PDF of a 2-page resume: no section heading orphaned at a page bottom, no item card split mid-bullet, in all 3 templates.
+3. [x] 1-page resumes export pixel-identical to current behavior (no regression).
+4. [x] Preview zoom does not affect pagination or export output.
 
 ## Constraints & landmines
 - Print CSS block (§3.2): any new floating UI (page indicators) must carry `print:hidden`.

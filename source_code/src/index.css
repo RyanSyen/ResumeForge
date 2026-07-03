@@ -6,10 +6,26 @@ body,
   height: 100%;
 }
 
+.print-avoid-break {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.print-avoid-break-after {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
 @media print {
   @page {
     size: A4;
-    margin: 0;
+    /* margin: 0 meant only the FIRST physical page got any top/bottom breathing
+       room (from the templates' own one-time p-6/p-7/p-8 padding on the
+       continuously-flowing content box) — every subsequent page started flush
+       against the paper edge, since pagination doesn't re-apply that padding
+       per page. A real @page margin gives every physical page the same
+       top/bottom/left/right breathing room automatically. */
+    margin: 12mm 15mm;
   }
 
   body * {
@@ -19,6 +35,13 @@ body,
   #preview-zoom {
     zoom: 1 !important;
     transform: none !important;
+    /* #preview-zoom is `position: relative` on screen (containing block for the
+       break-line overlays). Reset to static at print time so #resume-page's
+       `position: absolute; left: 0; top: 0` below resolves against the same
+       ancestor it always did, not this closer new containing block — otherwise
+       it anchors to wherever the (invisible but still layout-occupying) app
+       chrome centers this element instead of the true page origin. */
+    position: static !important;
   }
 
   #resume-page,
