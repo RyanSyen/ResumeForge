@@ -202,3 +202,52 @@ otherwise unchanged. All cells pass.
 
 All acceptance criteria met. `npm run lint/build/test` green (73/73 tests). Ready
 for `/pipeline-finalize`.
+
+## Final gate (Opus) — 2026-07-03
+
+Fresh Opus reviewer given only: the branch diff (`git diff main...HEAD`), spec.md,
+plan.md, and the Living Product Map §3 landmines — no implementation history, no
+access to this review.md's build log (by design, for genuinely independent judgment).
+
+### Verdict: **SHIP** (with minor notes)
+
+**Acceptance criteria walk:**
+- AC1 (page-break line + "Page N of M"): supported — measurement/normalization/
+  rendering logic sound and unit-tested; full confirmation needs a real browser
+  (already done: round 0 + rounds 1–3 above).
+- AC2 (no orphaned headings/split cards, 3 templates): supported at the CSS level —
+  `print-avoid-break`/`print-avoid-break-after` correctly applied once across all
+  6 shared body components and all 3 template section wrappers, both modern and
+  legacy break properties included.
+- AC3 (1-page pixel-identical): **flagged as not strictly true** — the `@page`
+  margin change (`0` → `12mm 15mm`, round 2's fix) is a real, deliberate change to
+  1-page print output, not just a multi-page fix. Opus's read: defensible
+  correctness improvement, but technically not "pixel-identical" to the pre-F-003
+  baseline. *(Already covered by the human's round-3 full-matrix pass, which
+  explicitly checked and accepted 1-page output as correct under the new margin —
+  this is an intentional, accepted tradeoff, not an oversight.)*
+- AC4 (zoom independence): supported, strongest part of the diff — `normalizeHeight`
+  and the scroll handler both divide out live zoom before any page math; print
+  forces `zoom: 1` regardless.
+
+**Out-of-scope check:** passed — no PDF library added, break rules applied once
+(not per-template), no headers/footers/page-numbers injected into print output
+(the "Page N of M" badge is `print:hidden`, screen-only).
+
+**Landmine/regression check:** passed — `print:hidden` present on all new floating
+UI; zoom-dependent measurement correctly mitigated; break rules shared, not
+duplicated; the `#preview-zoom` → `position: static` print reset independently
+re-derived and confirmed correct by Opus without seeing the build-log root-cause
+analysis above (cross-validates round 1's fix).
+
+**Minor notes (non-blocking):**
+1. AC3 wording vs. reality (see above) — addressed by human's round-3 sign-off.
+2. `breakOffsets.map(key={offset})` using float offsets as React keys — fine, unique
+   by construction.
+3. `onScroll`'s `computeCurrentPage` could read a stale `pageCount` within the same
+   render cycle — clamped by design, cosmetic only.
+4. Manual print matrix flagged as the one outstanding item — **already completed**
+   (round 3, full 18-cell matrix, all passed) by the time of this gate; Opus wasn't
+   shown this review.md by design (fresh-eyes constraint), so it couldn't know.
+
+No blockers. Ready for Gate 2 (human merge).
