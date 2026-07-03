@@ -22,7 +22,7 @@ backend features are a later milestone.*
 | F-002 | Data model hardening (schema validation + persist versioning) | P0 | done | F-001 |
 | F-003 | Multi-page support & reliable PDF export | P1 | done | F-001 |
 | F-004 | Resume import (PDF/DOCX → structured data) | P1 | done | F-002 |
-| F-005 | Custom sections | P1 | building | F-002 |
+| F-005 | Custom sections | P1 | in-review | F-002 |
 | F-006 | Presentation controls (typography, spacing, page format) | P1 | specced | F-003 |
 | F-007 | Version-safe iteration (undo, duplicate, snapshots) | P2 | proposed | F-002 |
 | F-008 | Public sharing with privacy controls | P2 | proposed | backend milestone |
