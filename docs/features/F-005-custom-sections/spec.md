@@ -1,7 +1,7 @@
 ---
 id: F-005
 title: Custom sections
-status: planned
+status: ship-approved
 priority: P1
 source: Must-Have Core MVP Features §Resume creation and editing ("plus custom sections")
 depends_on: [F-002]
@@ -29,11 +29,11 @@ a section without a code change.
   stay experience-only for now); drag-and-drop (keep move buttons).
 
 ## Acceptance criteria
-1. [ ] User can add a custom section with a name, add/edit/reorder/delete items in it, and see it live in the preview in all 3 templates.
-2. [ ] Custom sections reorder and hide/show exactly like built-in sections.
-3. [ ] Export → import round-trips custom sections losslessly; store migration bumps to v2 and preserves existing data.
-4. [ ] Deleting a custom section requires confirmation and removes it from `sectionOrder`/`hiddenSections` without corrupting either.
-5. [ ] AI Tailor still works with custom sections present (they appear in the serialized resume context).
+1. [x] User can add a custom section with a name, add/edit/reorder/delete items in it, and see it live in the preview in all 3 templates.
+2. [x] Custom sections reorder and hide/show exactly like built-in sections.
+3. [x] Export → import round-trips custom sections losslessly; store migration bumps to v2 and preserves existing data.
+4. [x] Deleting a custom section requires confirmation and removes it from `sectionOrder`/`hiddenSections` without corrupting either.
+5. [x] AI Tailor still works with custom sections present (they appear in the serialized resume context).
 
 ## Constraints & landmines
 - `sectionOrder`/`hiddenSections` currently type against a union of fixed keys — the type

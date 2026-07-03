@@ -3,27 +3,49 @@ import type { SectionKey } from '../../types'
 import { newId, useResume } from '../../store/resume'
 import { generateSummary, improveText } from '../../lib/gemini'
 import { AiAssist, Button, Field, TextArea } from '../ui'
+import { CustomSectionEditor } from './CustomSectionEditor'
 import { ItemCard, SectionShell } from './SectionShell'
+
+const BUILT_IN_KEYS = new Set<SectionKey>([
+  'summary',
+  'experience',
+  'education',
+  'projects',
+  'skills',
+  'certifications',
+  'languages',
+])
+
+function isSectionKey(key: string): key is SectionKey {
+  return BUILT_IN_KEYS.has(key as SectionKey)
+}
 
 export function EditorPanel() {
   const order = useResume((s) => s.resume.sectionOrder)
+  const customSections = useResume((s) => s.resume.customSections)
+  const { addCustomSection } = useResume.getState()
 
   return (
     <div className="space-y-3 p-3">
       <BasicsEditor />
       {order.map((key, i) => {
         const shell = { first: i === 0, last: i === order.length - 1 }
-        const editors: Record<SectionKey, React.ReactNode> = {
-          summary: <SummaryEditor {...shell} key={key} />,
-          experience: <ExperienceEditor {...shell} key={key} />,
-          education: <EducationEditor {...shell} key={key} />,
-          projects: <ProjectsEditor {...shell} key={key} />,
-          skills: <SkillsEditor {...shell} key={key} />,
-          certifications: <CertificationsEditor {...shell} key={key} />,
-          languages: <LanguagesEditor {...shell} key={key} />,
+        if (isSectionKey(key)) {
+          const editors: Record<SectionKey, React.ReactNode> = {
+            summary: <SummaryEditor {...shell} key={key} />,
+            experience: <ExperienceEditor {...shell} key={key} />,
+            education: <EducationEditor {...shell} key={key} />,
+            projects: <ProjectsEditor {...shell} key={key} />,
+            skills: <SkillsEditor {...shell} key={key} />,
+            certifications: <CertificationsEditor {...shell} key={key} />,
+            languages: <LanguagesEditor {...shell} key={key} />,
+          }
+          return editors[key]
         }
-        return editors[key]
+        const custom = customSections.find((cs) => cs.id === key)
+        return custom ? <CustomSectionEditor {...shell} section={custom} key={key} /> : null
       })}
+      <AddButton label="Add custom section" onClick={() => addCustomSection('Untitled Section')} />
     </div>
   )
 }
@@ -82,7 +104,7 @@ function SummaryEditor({ first, last }: { first: boolean; last: boolean }) {
   )
 }
 
-function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
+export function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <Button variant="secondary" className="w-full justify-center border-dashed" onClick={onClick}>
       <Plus size={14} /> {label}

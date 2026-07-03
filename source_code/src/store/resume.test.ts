@@ -131,7 +131,35 @@ describe('loadSample', () => {
 describe('migrateResumeState', () => {
   it('passes through unchanged when already at the current version', () => {
     const state = { resume: sampleResume() }
-    expect(migrateResumeState(state, 1)).toBe(state)
+    expect(migrateResumeState(state, 2)).toBe(state)
+  })
+
+  it('adds an empty customSections array when migrating a v1 payload that lacks it', () => {
+    const { customSections: _drop, ...v1Resume } = sampleResume()
+    const legacy = { resume: v1Resume as unknown as ResumeData }
+    const result = migrateResumeState(legacy, 1)
+    expect(result.resume.customSections).toEqual([])
+    expect(result.resume.experience).toEqual(sampleResume().experience)
+  })
+
+  it('leaves an existing customSections array untouched when migrating a v1 payload', () => {
+    const legacy = { resume: sampleResume() }
+    const result = migrateResumeState(legacy, 1)
+    expect(result.resume.customSections).toEqual(sampleResume().customSections)
+  })
+
+  it('drops a dangling section id when migrating a v1 payload instead of smuggling it through', () => {
+    const { customSections: _drop, ...v1Resume } = sampleResume()
+    const legacy = {
+      resume: {
+        ...v1Resume,
+        sectionOrder: [...v1Resume.sectionOrder, 'cst-forged'],
+        hiddenSections: ['cst-forged'],
+      } as unknown as ResumeData,
+    }
+    const result = migrateResumeState(legacy, 1)
+    expect(result.resume.sectionOrder).not.toContain('cst-forged')
+    expect(result.resume.hiddenSections).not.toContain('cst-forged')
   })
 
   it('repairs a versionless payload (pre-F-002 localStorage shape) without data loss', () => {
@@ -150,5 +178,117 @@ describe('migrateResumeState', () => {
   it('produces a fully valid empty resume when persisted state is missing entirely', () => {
     const result = migrateResumeState(undefined, 0)
     expect(result.resume).toEqual(emptyResume())
+  })
+})
+
+describe('custom sections', () => {
+  it('addCustomSection creates a section and appends its id to sectionOrder', () => {
+    useResume.getState().addCustomSection('Publications')
+    const { resume } = useResume.getState()
+    expect(resume.customSections).toHaveLength(1)
+    const section = resume.customSections[0]
+    expect(section.title).toBe('Publications')
+    expect(section.items).toEqual([])
+    expect(resume.sectionOrder.at(-1)).toBe(section.id)
+  })
+
+  it('renameCustomSection patches only the title of the matching section', () => {
+    useResume.getState().addCustomSection('Publications')
+    const id = useResume.getState().resume.customSections[0].id
+    useResume.getState().renameCustomSection(id, 'Talks')
+    expect(useResume.getState().resume.customSections[0].title).toBe('Talks')
+  })
+
+  it('removeCustomSection removes the section and strips its id from sectionOrder and hiddenSections', () => {
+    useResume.getState().addCustomSection('Publications')
+    const id = useResume.getState().resume.customSections[0].id
+    useResume.getState().toggleSection(id)
+    expect(useResume.getState().resume.hiddenSections).toContain(id)
+
+    useResume.getState().removeCustomSection(id)
+    const { resume } = useResume.getState()
+    expect(resume.customSections).toEqual([])
+    expect(resume.sectionOrder).not.toContain(id)
+    expect(resume.hiddenSections).not.toContain(id)
+  })
+
+  it('moveSection and toggleSection work when passed a custom section id', () => {
+    useResume.getState().addCustomSection('Publications')
+    const id = useResume.getState().resume.customSections[0].id
+    const before = useResume.getState().resume.sectionOrder
+    useResume.getState().moveSection(id, -1)
+    expect(useResume.getState().resume.sectionOrder.at(-1)).toBe(before.at(-2))
+    expect(useResume.getState().resume.sectionOrder.at(-2)).toBe(id)
+  })
+
+  describe('custom items', () => {
+    function withSection() {
+      useResume.getState().addCustomSection('Publications')
+      return useResume.getState().resume.customSections[0].id
+    }
+    const mk = (title: string) => ({ id: newId(), title, subtitle: '', date: '', description: '', bullets: [] })
+
+    it('addCustomItem appends an item to the section', () => {
+      const sectionId = withSection()
+      const item = mk('Paper A')
+      useResume.getState().addCustomItem(sectionId, item)
+      expect(useResume.getState().resume.customSections[0].items).toEqual([item])
+    })
+
+    it('updateCustomItem patches only the matching item, preserving other fields', () => {
+      const sectionId = withSection()
+      const item = mk('Paper A')
+      useResume.getState().addCustomItem(sectionId, item)
+      useResume.getState().updateCustomItem(sectionId, item.id, { subtitle: 'IEEE' })
+      const updated = useResume.getState().resume.customSections[0].items[0]
+      expect(updated.subtitle).toBe('IEEE')
+      expect(updated.title).toBe('Paper A')
+    })
+
+    it('updateCustomItem is a no-op when the id does not match any item', () => {
+      const sectionId = withSection()
+      const item = mk('Paper A')
+      useResume.getState().addCustomItem(sectionId, item)
+      useResume.getState().updateCustomItem(sectionId, 'missing-id', { title: 'Ghost' })
+      expect(useResume.getState().resume.customSections[0].items).toEqual([item])
+    })
+
+    it('removeCustomItem removes only the matching item', () => {
+      const sectionId = withSection()
+      const a = mk('A')
+      const b = mk('B')
+      useResume.getState().addCustomItem(sectionId, a)
+      useResume.getState().addCustomItem(sectionId, b)
+      useResume.getState().removeCustomItem(sectionId, a.id)
+      expect(useResume.getState().resume.customSections[0].items).toEqual([b])
+    })
+
+    it('moveCustomItem swaps a middle item with its neighbor', () => {
+      const sectionId = withSection()
+      const [a, b, c] = [mk('A'), mk('B'), mk('C')]
+      useResume.getState().addCustomItem(sectionId, a)
+      useResume.getState().addCustomItem(sectionId, b)
+      useResume.getState().addCustomItem(sectionId, c)
+      useResume.getState().moveCustomItem(sectionId, b.id, -1)
+      expect(useResume.getState().resume.customSections[0].items.map((it) => it.title)).toEqual(['B', 'A', 'C'])
+    })
+
+    it('moveCustomItem is a no-op moving the first item up', () => {
+      const sectionId = withSection()
+      const [a, b] = [mk('A'), mk('B')]
+      useResume.getState().addCustomItem(sectionId, a)
+      useResume.getState().addCustomItem(sectionId, b)
+      useResume.getState().moveCustomItem(sectionId, a.id, -1)
+      expect(useResume.getState().resume.customSections[0].items.map((it) => it.title)).toEqual(['A', 'B'])
+    })
+
+    it('moveCustomItem is a no-op moving the last item down', () => {
+      const sectionId = withSection()
+      const [a, b] = [mk('A'), mk('B')]
+      useResume.getState().addCustomItem(sectionId, a)
+      useResume.getState().addCustomItem(sectionId, b)
+      useResume.getState().moveCustomItem(sectionId, b.id, 1)
+      expect(useResume.getState().resume.customSections[0].items.map((it) => it.title)).toEqual(['A', 'B'])
+    })
   })
 })

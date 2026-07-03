@@ -29,6 +29,7 @@ export function emptyResume(): ResumeData {
     skills: [],
     certifications: [],
     languages: [],
+    customSections: [],
     sectionOrder: DEFAULT_ORDER,
     hiddenSections: [],
   }
@@ -124,7 +125,25 @@ export function sampleResume(): ResumeData {
       { id: 'lng-1', name: 'English', fluency: 'Native' },
       { id: 'lng-2', name: 'Mandarin', fluency: 'Professional' },
     ],
-    sectionOrder: DEFAULT_ORDER,
+    customSections: [
+      {
+        id: 'cst-1',
+        title: 'Publications',
+        items: [
+          {
+            id: 'csti-1',
+            title: 'Scaling Multi-Tenant Billing Systems',
+            subtitle: 'InfoQ',
+            date: '2023',
+            description: 'Case study on the Nimbus Labs billing platform migration.',
+            bullets: [
+              'Covered the event-sourcing approach used to reconcile $40M ARR without downtime',
+            ],
+          },
+        ],
+      },
+    ],
+    sectionOrder: [...DEFAULT_ORDER, 'cst-1'],
     hiddenSections: [],
   }
 }

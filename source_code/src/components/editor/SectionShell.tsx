@@ -1,22 +1,30 @@
 import type { ReactNode } from 'react'
 import { ChevronDown, ChevronUp, Eye, EyeOff, Trash2 } from 'lucide-react'
-import type { SectionKey } from '../../types'
+import type { SectionId, SectionKey } from '../../types'
 import { SECTION_LABELS } from '../../types'
 import { useResume } from '../../store/resume'
 import { IconButton } from '../ui'
 
+function isSectionKey(key: SectionId): key is SectionKey {
+  return key in SECTION_LABELS
+}
+
 export function SectionShell({
   section,
+  label,
   first,
   last,
   children,
   actions,
+  onDelete,
 }: {
-  section: SectionKey
+  section: SectionId
+  label?: string
   first: boolean
   last: boolean
   children: ReactNode
   actions?: ReactNode
+  onDelete?: () => void
 }) {
   const hidden = useResume((s) => s.resume.hiddenSections.includes(section))
   const moveSection = useResume((s) => s.moveSection)
@@ -25,7 +33,9 @@ export function SectionShell({
   return (
     <section className={`rounded-lg border border-slate-200 bg-white ${hidden ? 'opacity-60' : ''}`}>
       <header className="flex items-center gap-1 border-b border-slate-100 px-3 py-2">
-        <h3 className="flex-1 text-sm font-semibold text-slate-800">{SECTION_LABELS[section]}</h3>
+        <h3 className="flex-1 text-sm font-semibold text-slate-800">
+          {label ?? (isSectionKey(section) ? SECTION_LABELS[section] : '')}
+        </h3>
         {actions}
         <IconButton title="Move section up" disabled={first} onClick={() => moveSection(section, -1)}>
           <ChevronUp size={15} />
@@ -39,6 +49,11 @@ export function SectionShell({
         >
           {hidden ? <EyeOff size={15} /> : <Eye size={15} />}
         </IconButton>
+        {onDelete && (
+          <IconButton title="Delete section" danger onClick={onDelete}>
+            <Trash2 size={15} />
+          </IconButton>
+        )}
       </header>
       {!hidden && <div className="space-y-3 p-3">{children}</div>}
     </section>

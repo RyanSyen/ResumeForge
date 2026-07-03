@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { importResume, parseJson } from './gemini'
+import { generateSummary, importResume, parseJson } from './gemini'
 import { useSettings } from '../store/settings'
-import { emptyResume } from '../data/sample'
+import { emptyResume, sampleResume } from '../data/sample'
 
 describe('parseJson', () => {
   it('parses clean JSON', () => {
@@ -38,6 +38,40 @@ function mockGeminiResponse(body: unknown) {
     ),
   )
 }
+
+describe('resumeToText (via generateSummary)', () => {
+  const settingsBefore = useSettings.getState()
+
+  beforeEach(() => {
+    useSettings.setState({ apiKey: 'test-api-key', model: 'gemini-2.5-flash' })
+  })
+
+  afterEach(() => {
+    useSettings.setState(settingsBefore)
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('includes custom section titles and item content in the serialized resume context', async () => {
+    const fetchMock = vi.fn(async (_url: string, _init: RequestInit) =>
+      new Response(
+        JSON.stringify({ candidates: [{ content: { parts: [{ text: 'A summary.' }] } }] }),
+        { status: 200 },
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await generateSummary(sampleResume())
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    const prompt: string = JSON.parse(init.body as string).contents[0].parts[0].text
+
+    const section = sampleResume().customSections[0]
+    expect(prompt).toContain('CUSTOM SECTIONS:')
+    expect(prompt).toContain(section.title)
+    expect(prompt).toContain(section.items[0].title)
+  })
+})
 
 describe('importResume', () => {
   const settingsBefore = useSettings.getState()
