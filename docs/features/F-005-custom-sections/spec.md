@@ -1,7 +1,7 @@
 ---
 id: F-005
 title: Custom sections
-status: planned
+status: building
 priority: P1
 source: Must-Have Core MVP Features §Resume creation and editing ("plus custom sections")
 depends_on: [F-002]
