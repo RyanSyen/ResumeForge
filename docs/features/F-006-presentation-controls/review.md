@@ -48,3 +48,38 @@ Spec requires: "Unit tests for settings store migration and the settings→CSS-v
 - Tests: 160/160 passing (19 test files).
 - All 5 acceptance criteria checked off in `spec.md`.
 - 2 confirmed code-review findings, both fixed and covered by new regression tests.
+
+## Final gate (Opus) — 2026-07-03
+
+Independent Opus review, given only the branch diff (`git diff main...HEAD`), `spec.md`,
+`plan.md`, and Living Product Map §3 — no implementation history or prior review context.
+
+### VERDICT: SHIP
+
+**Blockers: none.**
+
+All 5 acceptance criteria independently re-verified against the code (not just the
+checkmarks): persistence/migration (AC1), dynamic `@page` for both formats (AC2), font
+fallback-stack shape (AC3), template-switch independence (AC4), reset scope (AC5). No
+scope creep against the spec's out-of-scope list. No landmine violations (print-CSS hack
+discipline, `print:hidden`, schema-versioning pattern all respected). No injection risk in
+the runtime-injected `@page` `<style>` tag — values are enum/config-derived, never
+user free-text.
+
+**Non-blocking observations:**
+1. The plan's Deviations section didn't disclose that per-template inner padding is now
+   driven by the page-margin control (Tailwind `p-6/7/8` → `var(--rf-page-margin)`), which
+   does change the on-screen default look more than the "zero visual change" framing
+   implied — correct semantics (visible margin should match the print margin), just an
+   under-documented deviation, not a defect.
+2. Recommends a human print one A4 and one US Letter page before merge to confirm no
+   content clipping at print time, since real PDF rendering wasn't captured in any
+   automated pass (this echoes the same residual manual check already flagged in the
+   stage-4 log above).
+3. Minor: `getPageCssVars` sets `--rf-page-width/height` on `#resume-page` inline style
+   while the same element also sets explicit `width`/`minHeight` from the same source —
+   redundant but harmless (the CSS vars feed `@media print`; the inline dims drive the
+   on-screen box).
+
+**Gate 2 (merge to `main`) is clear to proceed** once the human reviewer optionally
+confirms the residual print-fidelity check above.
