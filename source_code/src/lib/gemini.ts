@@ -1,5 +1,6 @@
 import { useSettings } from '../store/settings'
 import type { ResumeData, TailorResult } from '../types'
+import { parseResumeData } from './schema'
 
 const BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 
@@ -15,13 +16,35 @@ interface GeminiOptions {
   temperature?: number
 }
 
-export async function generateContent(prompt: string, opts: GeminiOptions = {}): Promise<string> {
-  const { apiKey, model } = useSettings.getState()
-  if (!apiKey.trim()) throw new MissingKeyError()
+async function parseErrorResponse(res: Response): Promise<Error> {
+  let detail = ''
+  try {
+    const body = await res.json()
+    detail = body?.error?.message ?? ''
+  } catch {
+    /* non-JSON error body */
+  }
+  if (res.status === 400 && /api key/i.test(detail)) {
+    return new Error('Your Gemini API key is invalid. Check it in Settings.')
+  }
+  if (res.status === 403) {
+    return new Error('Your Gemini API key was rejected (403). Check it in Settings.')
+  }
+  if (res.status === 429) {
+    return new Error('Gemini rate limit reached. Wait a moment and try again.')
+  }
+  return new Error(detail || `Gemini request failed (HTTP ${res.status}).`)
+}
 
-  const res = await fetch(`${BASE}/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`, {
+async function postGenerateContent(
+  url: string,
+  headers: Record<string, string>,
+  prompt: string,
+  opts: GeminiOptions,
+): Promise<string> {
+  const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
@@ -31,25 +54,7 @@ export async function generateContent(prompt: string, opts: GeminiOptions = {}):
     }),
   })
 
-  if (!res.ok) {
-    let detail = ''
-    try {
-      const body = await res.json()
-      detail = body?.error?.message ?? ''
-    } catch {
-      /* non-JSON error body */
-    }
-    if (res.status === 400 && /api key/i.test(detail)) {
-      throw new Error('Your Gemini API key is invalid. Check it in Settings.')
-    }
-    if (res.status === 403) {
-      throw new Error('Your Gemini API key was rejected (403). Check it in Settings.')
-    }
-    if (res.status === 429) {
-      throw new Error('Gemini rate limit reached. Wait a moment and try again.')
-    }
-    throw new Error(detail || `Gemini request failed (HTTP ${res.status}).`)
-  }
+  if (!res.ok) throw await parseErrorResponse(res)
 
   const data = await res.json()
   const text: string =
@@ -58,6 +63,36 @@ export async function generateContent(prompt: string, opts: GeminiOptions = {}):
       .join('') ?? ''
   if (!text.trim()) throw new Error('Gemini returned an empty response. Try again.')
   return text
+}
+
+export async function generateContent(prompt: string, opts: GeminiOptions = {}): Promise<string> {
+  const { apiKey, model } = useSettings.getState()
+  if (!apiKey.trim()) throw new MissingKeyError()
+
+  return postGenerateContent(
+    `${BASE}/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,
+    { 'Content-Type': 'application/json' },
+    prompt,
+    opts,
+  )
+}
+
+/**
+ * Same request as generateContent, but auth via the `x-goog-api-key` header instead of
+ * the `?key=` query param — the query param leaks into browser network logs and any
+ * URL-logging intermediary (see Living Product Map §3.1). This is the intended pattern
+ * for all future new AI calls; migrating the existing `?key=` calls is a follow-up.
+ */
+async function generateContentHeaderAuth(prompt: string, opts: GeminiOptions = {}): Promise<string> {
+  const { apiKey, model } = useSettings.getState()
+  if (!apiKey.trim()) throw new MissingKeyError()
+
+  return postGenerateContent(
+    `${BASE}/${model}:generateContent`,
+    { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey.trim() },
+    prompt,
+    opts,
+  )
 }
 
 export function parseJson<T>(text: string): T {
@@ -181,6 +216,90 @@ export async function tailorResume(resume: ResumeData, jobDescription: string): 
       : [],
     recommendations: Array.isArray(result.recommendations) ? result.recommendations : [],
   }
+}
+
+const IMPORT_SCHEMA_TEMPLATE = {
+  basics: {
+    fullName: '',
+    headline: '',
+    email: '',
+    phone: '',
+    location: '',
+    website: '',
+    linkedin: '',
+    github: '',
+  },
+  summary: '',
+  experience: [
+    { company: '', position: '', location: '', startDate: '', endDate: '', highlights: [''] },
+  ],
+  education: [
+    { institution: '', degree: '', field: '', location: '', startDate: '', endDate: '', score: '' },
+  ],
+  projects: [{ name: '', url: '', description: '', highlights: [''] }],
+  skills: [{ category: '', skills: [''] }],
+  certifications: [{ name: '', issuer: '', date: '', url: '' }],
+  languages: [{ name: '', fluency: '' }],
+}
+
+/**
+ * parseResumeData's schema requires every string field to be present (not undefined) —
+ * correct for validating a user's own JSON export, but Gemini won't reliably include
+ * every key for every item. Fills only genuinely *missing* keys from `value` with the
+ * matching leaf from `template` (recursing into objects and array items) so minor LLM
+ * omissions don't produce a spurious SchemaError. A key that's present but wrong-typed
+ * (e.g. a string where an array was expected) is left untouched so parseResumeData's
+ * strict validation still rejects it — this only papers over absence, not malformed
+ * data. The "id" field intentionally has no template leaf, so it always falls through
+ * to parseResumeData's own id-repair.
+ */
+function withDefaults<T>(value: unknown, template: T): T {
+  if (Array.isArray(template)) {
+    if (value === undefined) return [] as unknown as T
+    if (!Array.isArray(value)) return value as T
+    const itemTemplate = (template as unknown[])[0]
+    return value.map((v) => withDefaults(v, itemTemplate)) as unknown as T
+  }
+  if (template && typeof template === 'object') {
+    if (value === undefined) return template
+    if (!value || typeof value !== 'object') return value as T
+    const source = value as Record<string, unknown>
+    const out: Record<string, unknown> = { ...source }
+    for (const key of Object.keys(template)) {
+      out[key] = withDefaults(source[key], (template as Record<string, unknown>)[key])
+    }
+    return out as T
+  }
+  return (value === undefined ? template : value) as T
+}
+
+/**
+ * Parses free-text resume content (extracted from a PDF/DOCX upload) into a
+ * ResumeData-shaped structure. Uses the header-auth request path (F-004) rather than
+ * generateContent's `?key=` pattern. Response is validated/repaired through the same
+ * strict schema JSON import uses, so imported data carries the same guarantees.
+ */
+export async function importResume(extractedText: string): Promise<ResumeData> {
+  const prompt = [
+    'You are an expert resume parser.',
+    'Convert the following resume text (extracted from a PDF or DOCX file) into structured JSON.',
+    '',
+    'STRICT RULES:',
+    '- Never invent facts, employers, dates, credentials, or skills not present in the text.',
+    '- Only structure what is present in the text — use an empty string or empty array for anything not found.',
+    '- Do not include "id" fields on any item; they are assigned separately.',
+    '- Preserve dates and bullet text as closely as possible to the source wording.',
+    '',
+    'Return ONLY valid JSON matching exactly this schema:',
+    JSON.stringify(IMPORT_SCHEMA_TEMPLATE),
+    '',
+    '=== RESUME TEXT ===',
+    extractedText,
+  ].join('\n')
+
+  const raw = await generateContentHeaderAuth(prompt, { json: true, temperature: 0.2 })
+  const parsed = parseJson<unknown>(raw)
+  return parseResumeData(withDefaults(parsed, IMPORT_SCHEMA_TEMPLATE))
 }
 
 export async function testConnection(): Promise<void> {
