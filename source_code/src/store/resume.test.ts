@@ -148,6 +148,20 @@ describe('migrateResumeState', () => {
     expect(result.resume.customSections).toEqual(sampleResume().customSections)
   })
 
+  it('drops a dangling section id when migrating a v1 payload instead of smuggling it through', () => {
+    const { customSections: _drop, ...v1Resume } = sampleResume()
+    const legacy = {
+      resume: {
+        ...v1Resume,
+        sectionOrder: [...v1Resume.sectionOrder, 'cst-forged'],
+        hiddenSections: ['cst-forged'],
+      } as unknown as ResumeData,
+    }
+    const result = migrateResumeState(legacy, 1)
+    expect(result.resume.sectionOrder).not.toContain('cst-forged')
+    expect(result.resume.hiddenSections).not.toContain('cst-forged')
+  })
+
   it('repairs a versionless payload (pre-F-002 localStorage shape) without data loss', () => {
     const legacy = { resume: sampleResume() }
     const result = migrateResumeState(legacy, 0)

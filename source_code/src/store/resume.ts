@@ -35,17 +35,13 @@ interface ResumeStore {
   reset: () => void
 }
 
-function migrateV1ToV2(resume: ResumeData): ResumeData {
-  if (resume.customSections) return resume
-  return { ...resume, customSections: [] }
-}
-
 export function migrateResumeState(persisted: unknown, version: number): { resume: ResumeData } {
   if (version >= 2) return persisted as { resume: ResumeData }
-  if (version >= 1) {
-    const resume = (persisted as { resume?: ResumeData } | undefined)?.resume
-    return { resume: migrateV1ToV2(resume ?? emptyResume()) }
-  }
+  // v0 and v1 payloads both go through the same lenient repair: it already defaults
+  // customSections to [] and drops any sectionOrder/hiddenSections id that doesn't
+  // resolve to a built-in key or a known custom section, so a corrupted pre-v2
+  // payload can't smuggle a dangling id past this migration the way a targeted
+  // v1->v2-only transform would.
   const resume = (persisted as { resume?: unknown } | undefined)?.resume
   return { resume: repairResumeData(resume) }
 }

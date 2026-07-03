@@ -5,6 +5,10 @@ import { SECTION_LABELS } from '../../types'
 import { useResume } from '../../store/resume'
 import { IconButton } from '../ui'
 
+function isSectionKey(key: SectionId): key is SectionKey {
+  return key in SECTION_LABELS
+}
+
 export function SectionShell({
   section,
   label,
@@ -30,7 +34,7 @@ export function SectionShell({
     <section className={`rounded-lg border border-slate-200 bg-white ${hidden ? 'opacity-60' : ''}`}>
       <header className="flex items-center gap-1 border-b border-slate-100 px-3 py-2">
         <h3 className="flex-1 text-sm font-semibold text-slate-800">
-          {label ?? SECTION_LABELS[section as SectionKey]}
+          {label ?? (isSectionKey(section) ? SECTION_LABELS[section] : '')}
         </h3>
         {actions}
         <IconButton title="Move section up" disabled={first} onClick={() => moveSection(section, -1)}>
