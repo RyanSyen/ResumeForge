@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { ResumeData, SectionKey } from '../../types'
+import type { ResumeData, SectionId, SectionKey } from '../../types'
 import { SECTION_LABELS } from '../../types'
 
 export interface TemplateProps {
@@ -7,8 +7,20 @@ export interface TemplateProps {
   accent: string
 }
 
-function visible(resume: ResumeData, key: SectionKey): boolean {
+function isSectionKey(key: SectionId): key is SectionKey {
+  return key in SECTION_LABELS
+}
+
+function sectionLabel(resume: ResumeData, key: SectionId): string {
+  if (isSectionKey(key)) return SECTION_LABELS[key]
+  return resume.customSections.find((cs) => cs.id === key)?.title ?? ''
+}
+
+function visible(resume: ResumeData, key: SectionId): boolean {
   if (resume.hiddenSections.includes(key)) return false
+  if (!isSectionKey(key)) {
+    return (resume.customSections.find((cs) => cs.id === key)?.items.length ?? 0) > 0
+  }
   switch (key) {
     case 'summary':
       return resume.summary.trim() !== ''
@@ -17,7 +29,7 @@ function visible(resume: ResumeData, key: SectionKey): boolean {
   }
 }
 
-function orderedSections(resume: ResumeData, only?: SectionKey[]): SectionKey[] {
+function orderedSections(resume: ResumeData, only?: SectionId[]): SectionId[] {
   return resume.sectionOrder.filter(
     (k) => visible(resume, k) && (!only || only.includes(k)),
   )
@@ -145,7 +157,37 @@ function LanguagesBody({ resume }: TemplateProps) {
   )
 }
 
-function sectionBody(key: SectionKey, props: TemplateProps): ReactNode {
+function CustomSectionBody({ resume, accent, sectionId }: TemplateProps & { sectionId: string }) {
+  const section = resume.customSections.find((cs) => cs.id === sectionId)
+  if (!section) return null
+  return (
+    <div className="space-y-2">
+      {section.items.map((it) => (
+        <div key={it.id} className="print-avoid-break text-[12px]">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="font-semibold">{it.title}</span>
+            <span className="shrink-0 text-[11px] text-gray-500">{it.date}</span>
+          </div>
+          {it.subtitle && (
+            <div className="text-[12px] font-medium" style={{ color: accent }}>
+              {it.subtitle}
+            </div>
+          )}
+          {it.description && <div className="text-gray-700">{it.description}</div>}
+          {cleanBullets(it.bullets).length > 0 && (
+            <ul className="mt-0.5 list-disc space-y-0.5 pl-4 leading-snug text-gray-700">
+              {cleanBullets(it.bullets).map((h, i) => (
+                <li key={i}>{h}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function sectionBody(key: SectionId, props: TemplateProps): ReactNode {
   switch (key) {
     case 'summary':
       return <p className="text-[12px] leading-snug text-gray-700">{props.resume.summary}</p>
@@ -161,6 +203,8 @@ function sectionBody(key: SectionKey, props: TemplateProps): ReactNode {
       return <CertificationsBody {...props} />
     case 'languages':
       return <LanguagesBody {...props} />
+    default:
+      return <CustomSectionBody {...props} sectionId={key} />
   }
 }
 
@@ -169,8 +213,14 @@ function sectionBody(key: SectionKey, props: TemplateProps): ReactNode {
 export function ModernTemplate(props: TemplateProps) {
   const { resume, accent } = props
   const b = resume.basics
-  const sidebarKeys: SectionKey[] = ['skills', 'certifications', 'languages']
-  const mainKeys: SectionKey[] = ['summary', 'experience', 'education', 'projects']
+  const sidebarKeys: SectionId[] = ['skills', 'certifications', 'languages']
+  const mainKeys: SectionId[] = [
+    'summary',
+    'experience',
+    'education',
+    'projects',
+    ...resume.customSections.map((cs) => cs.id),
+  ]
   const sidebar = orderedSections(resume, sidebarKeys)
   const main = orderedSections(resume, mainKeys)
   const contacts = [b.email, b.phone, b.location, b.website, b.linkedin, b.github].filter(Boolean)
@@ -188,7 +238,7 @@ export function ModernTemplate(props: TemplateProps) {
         {sidebar.map((key) => (
           <div key={key} className="print-avoid-break mt-5">
             <h2 className="print-avoid-break-after mb-1.5 border-b border-white/30 pb-1 text-[11px] font-bold uppercase tracking-wider">
-              {SECTION_LABELS[key]}
+              {sectionLabel(resume, key)}
             </h2>
             <div className="[&_*]:!text-white/90 [&_.font-semibold]:!text-white">
               {sectionBody(key, props)}
@@ -203,7 +253,7 @@ export function ModernTemplate(props: TemplateProps) {
               className="print-avoid-break-after mb-1.5 text-[12px] font-bold uppercase tracking-wider"
               style={{ color: accent }}
             >
-              {SECTION_LABELS[key]}
+              {sectionLabel(resume, key)}
             </h2>
             {sectionBody(key, props)}
           </div>
@@ -232,7 +282,7 @@ export function ClassicTemplate(props: TemplateProps) {
             className="print-avoid-break-after mb-1.5 border-b pb-0.5 text-[13px] font-bold uppercase tracking-widest"
             style={{ borderColor: accent, color: accent }}
           >
-            {SECTION_LABELS[key]}
+            {sectionLabel(resume, key)}
           </h2>
           {sectionBody(key, props)}
         </div>
@@ -266,7 +316,7 @@ export function CompactTemplate(props: TemplateProps) {
       {orderedSections(resume).map((key) => (
         <div key={key} className="print-avoid-break mb-3.5">
           <h2 className="print-avoid-break-after mb-1 text-[11.5px] font-bold uppercase tracking-wider text-gray-800">
-            {SECTION_LABELS[key]}
+            {sectionLabel(resume, key)}
           </h2>
           {sectionBody(key, props)}
         </div>

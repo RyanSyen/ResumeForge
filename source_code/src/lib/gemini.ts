@@ -143,6 +143,12 @@ function resumeToText(resume: ResumeData): string {
     '',
     'CERTIFICATIONS:',
     ...resume.certifications.map((c) => `- ${c.name} (${c.issuer}, ${c.date})`),
+    '',
+    'CUSTOM SECTIONS:',
+    ...resume.customSections.flatMap((cs) => [
+      `${cs.title}:`,
+      ...cs.items.map((it) => `- ${it.title} ${it.subtitle} (${it.date}): ${it.description} ${it.bullets.join('; ')}`),
+    ]),
   ]
   return lines.join('\n')
 }
@@ -240,6 +246,7 @@ const IMPORT_SCHEMA_TEMPLATE = {
   skills: [{ category: '', skills: [''] }],
   certifications: [{ name: '', issuer: '', date: '', url: '' }],
   languages: [{ name: '', fluency: '' }],
+  customSections: [] as { title: string; items: { title: string; subtitle: string; date: string; description: string; bullets: string[] }[] }[],
 }
 
 /**
