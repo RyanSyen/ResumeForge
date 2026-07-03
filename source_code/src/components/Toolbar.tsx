@@ -1,9 +1,11 @@
 import { useRef } from 'react'
-import { FileJson, FileText, FileUp, Printer, RotateCcw, Settings2, Upload } from 'lucide-react'
+import { FileJson, FileText, FileUp, Palette, Printer, RotateCcw, Settings2, Upload } from 'lucide-react'
 import type { TemplateId } from '../types'
 import { useResume } from '../store/resume'
 import { useSettings } from '../store/settings'
 import { exportResumeJson, importResumeJson } from '../lib/file'
+import { getMarginsMm } from '../lib/pageFormats'
+import { updatePrintPageStyle } from '../lib/printStyleInjector'
 import { openImportDialog } from './ImportDialog'
 import { Button } from './ui'
 
@@ -14,7 +16,8 @@ export function Toolbar() {
   const setResume = useResume((s) => s.setResume)
   const loadSample = useResume((s) => s.loadSample)
   const reset = useResume((s) => s.reset)
-  const { template, setTemplate, accent, setAccent, openSettings, apiKey } = useSettings()
+  const { template, setTemplate, accent, setAccent, openSettings, openDesignPanel, apiKey, pageFormat, pageMargins } =
+    useSettings()
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function handleImport(file: File | undefined) {
@@ -101,9 +104,27 @@ export function Toolbar() {
       <Button variant="secondary" className="!text-xs" onClick={() => exportResumeJson(resume)}>
         <FileJson size={13} /> Export
       </Button>
-      <Button variant="primary" className="!text-xs" onClick={() => window.print()}>
+      <Button
+        variant="primary"
+        className="!text-xs"
+        onClick={() => {
+          // Defensive re-apply — closes a theoretical gap between a settings change
+          // and the useEffect in Preview.tsx that keeps the print @page rule in sync.
+          updatePrintPageStyle(pageFormat, getMarginsMm(pageMargins))
+          window.print()
+        }}
+      >
         <Printer size={13} /> Download PDF
       </Button>
+
+      <button
+        type="button"
+        onClick={openDesignPanel}
+        title="Design (fonts, spacing, page format)"
+        className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+      >
+        <Palette size={17} />
+      </button>
 
       <button
         type="button"
