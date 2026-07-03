@@ -1,7 +1,7 @@
 ---
 id: F-006
 title: Presentation controls (typography, spacing, page format)
-status: building
+status: in-review
 priority: P1
 source: Must-Have Core MVP Features §Templates and presentation controls
 depends_on: [F-003]
