@@ -32,6 +32,11 @@ export function ImportDialog() {
   const hasKey = useSettings((s) => s.apiKey.trim() !== '')
   const openSettings = useSettings((s) => s.openSettings)
   const fileRef = useRef<HTMLInputElement>(null)
+  // Guards against a stale response overwriting newer state: the dialog stays mounted
+  // (App.tsx renders it unconditionally) while `close`/`reset` reset local state
+  // immediately, so an abandoned in-flight request from a prior file selection can
+  // resolve after the user reopened the dialog and picked a different file.
+  const requestIdRef = useRef(0)
 
   const [stage, setStage] = useState<Stage>('idle')
   const [parsed, setParsed] = useState<ResumeData | null>(null)
@@ -41,6 +46,7 @@ export function ImportDialog() {
   if (!open) return null
 
   function reset() {
+    requestIdRef.current += 1
     setStage('idle')
     setParsed(null)
     setError(null)
@@ -58,14 +64,17 @@ export function ImportDialog() {
       openSettings()
       return
     }
+    const requestId = ++requestIdRef.current
     setStage('loading')
     setError(null)
     setRawText(null)
     try {
       const resume = await importResumeFile(file)
+      if (requestId !== requestIdRef.current) return
       setParsed(resume)
       setStage('preview')
     } catch (e) {
+      if (requestId !== requestIdRef.current) return
       setError(e instanceof Error ? e.message : 'Import failed.')
       setRawText(e instanceof ImportError ? (e.rawText ?? null) : null)
       setStage('failure')

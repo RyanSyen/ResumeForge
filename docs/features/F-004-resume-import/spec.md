@@ -28,12 +28,12 @@ this app's own exports, useless for onboarding from a real-world resume.
   importing without a Gemini API key (feature is gated on key like other AI features).
 
 ## Acceptance criteria
-1. [ ] A typical single-column text PDF resume imports into correctly populated sections (basics, experience with dates/bullets, education, skills).
-2. [ ] A DOCX of the same resume produces an equivalent result.
-3. [ ] Parsed result is shown for confirmation before overwriting the current resume; cancel leaves state untouched.
-4. [ ] All imported items pass F-002 schema validation and carry valid `id`s.
-5. [ ] Extraction or AI failure shows a useful error plus the raw extracted text; no partial resume state is written.
-6. [ ] No key configured → routed to settings (same pattern as existing AI features).
+1. [ ] A typical single-column text PDF resume imports into correctly populated sections (basics, experience with dates/bullets, education, skills). **NOT VERIFIED — no Gemini API key available in this environment; see review.md.**
+2. [ ] A DOCX of the same resume produces an equivalent result. **NOT VERIFIED — same reason as AC1.**
+3. [x] Parsed result is shown for confirmation before overwriting the current resume; cancel leaves state untouched.
+4. [x] All imported items pass F-002 schema validation and carry valid `id`s.
+5. [x] Extraction or AI failure shows a useful error plus the raw extracted text; no partial resume state is written.
+6. [x] No key configured → routed to settings (same pattern as existing AI features).
 
 ## Constraints & landmines
 - Follow the AI-call pattern of `src/lib/gemini.ts` but **do not copy the `?key=` query-param

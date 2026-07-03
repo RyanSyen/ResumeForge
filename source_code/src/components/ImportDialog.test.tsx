@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { ImportDialog, openImportDialog, useImportDialog } from './ImportDialog'
 import { useResume } from '../store/resume'
 import { useSettings } from '../store/settings'
 import { ImportError } from '../lib/import'
 import * as importModule from '../lib/import'
 import { emptyResume, sampleResume } from '../data/sample'
+import type { ResumeData } from '../types'
 
 const settingsBefore = useSettings.getState()
 const resumeBefore = useResume.getState().resume
@@ -129,6 +130,42 @@ describe('ImportDialog', () => {
 
     expect(await screen.findByText('No text could be extracted from this PDF.')).toBeTruthy()
     expect(document.querySelector('textarea')).toBeNull()
+  })
+
+  it('ignores a stale response from an abandoned request after the dialog is closed and reopened', async () => {
+    let resolveFirst: (value: ResumeData) => void = () => {}
+    const firstPromise = new Promise<ResumeData>((resolve) => {
+      resolveFirst = resolve
+    })
+    const secondParsed = { ...emptyResume(), basics: { ...emptyResume().basics, fullName: 'Second File' } }
+
+    const spy = vi.spyOn(importModule, 'importResumeFile')
+    spy.mockReturnValueOnce(firstPromise)
+    spy.mockResolvedValueOnce(secondParsed)
+
+    openImportDialog()
+    const { container } = render(<ImportDialog />)
+    fireEvent.change(fileInput(), {
+      target: { files: [new File(['content'], 'first.pdf', { type: 'application/pdf' })] },
+    })
+
+    // Close the dialog (X button) while the first request is still in flight.
+    const closeBtn = container.querySelector('h2')!.nextElementSibling as HTMLButtonElement
+    fireEvent.click(closeBtn)
+
+    // Reopen and pick a second file — its response arrives before the abandoned first one.
+    act(() => openImportDialog())
+    fireEvent.change(fileInput(), {
+      target: { files: [new File(['content'], 'second.pdf', { type: 'application/pdf' })] },
+    })
+    await screen.findByText('Second File')
+
+    // The abandoned first request resolves now — it must not clobber the current preview.
+    resolveFirst({ ...emptyResume(), basics: { ...emptyResume().basics, fullName: 'First File' } })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(screen.getByText('Second File')).toBeTruthy()
+    expect(screen.queryByText('First File')).toBeNull()
   })
 
   it('dialog root carries print:hidden', () => {

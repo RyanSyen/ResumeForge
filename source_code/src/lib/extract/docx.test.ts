@@ -20,10 +20,18 @@ describe('extractDocxText', () => {
     expect(text).toContain('SKILLS')
   })
 
-  it('throws a clear error when the DOCX has no extractable text', async () => {
-    const empty = new File(['not a real docx'], 'empty.docx', {
+  it('throws a friendly error when the file is not a valid DOCX (not a zip)', async () => {
+    const notADocx = new File(['not a real docx'], 'not-a-docx.docx', {
       type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     })
-    await expect(extractDocxText(empty)).rejects.toThrow()
+    await expect(extractDocxText(notADocx)).rejects.toThrow(
+      "This file doesn't look like a valid DOCX. Try re-saving it from Word and uploading again.",
+    )
+  })
+
+  it('throws a clear error when a valid DOCX has no extractable text', async () => {
+    const text = await extractDocxText(fixture('empty-resume.docx')).catch((e) => e)
+    expect(text).toBeInstanceOf(Error)
+    expect(text.message).toBe('No text could be extracted from this DOCX file.')
   })
 })
