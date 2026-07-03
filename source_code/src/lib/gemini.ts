@@ -257,7 +257,7 @@ function withDefaults<T>(value: unknown, template: T): T {
   if (Array.isArray(template)) {
     if (value === undefined) return [] as unknown as T
     if (!Array.isArray(value)) return value as T
-    const itemTemplate = template[0] as T[number]
+    const itemTemplate = (template as unknown[])[0]
     return value.map((v) => withDefaults(v, itemTemplate)) as unknown as T
   }
   if (template && typeof template === 'object') {

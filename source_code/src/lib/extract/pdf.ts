@@ -1,7 +1,11 @@
 export async function extractPdfText(file: File): Promise<string> {
   const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
   const data = new Uint8Array(await file.arrayBuffer())
-  const doc = await pdfjsLib.getDocument({ data, disableWorker: true, verbosity: 0 }).promise
+  // No `workerSrc` is configured: pdfjs-dist falls back to running its "fake worker" on
+  // the main thread automatically (see PDFWorker#initialize's try/catch around
+  // `new Worker(...)`), which is fine for the small resume files this feature handles
+  // and avoids configuring worker asset bundling under Vite entirely.
+  const doc = await pdfjsLib.getDocument({ data, verbosity: 0 }).promise
 
   const pages: string[] = []
   for (let i = 1; i <= doc.numPages; i++) {

@@ -31,7 +31,7 @@ describe('parseJson', () => {
 })
 
 function mockGeminiResponse(body: unknown) {
-  return vi.fn(async () =>
+  return vi.fn(async (_url: string, _init: RequestInit) =>
     new Response(
       JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(body) }] } }] }),
       { status: 200 },

@@ -5,6 +5,7 @@ import { EditorPanel } from './components/editor/EditorPanel'
 import { AiPanel } from './components/ai/AiPanel'
 import { Preview } from './components/preview/Preview'
 import { SettingsDialog } from './components/SettingsDialog'
+import { ImportDialog } from './components/ImportDialog'
 
 type Tab = 'content' | 'ai'
 
@@ -31,6 +32,7 @@ export default function App() {
         <Preview />
       </div>
       <SettingsDialog />
+      <ImportDialog />
     </div>
   )
 }

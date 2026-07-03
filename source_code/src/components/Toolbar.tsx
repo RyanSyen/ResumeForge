@@ -1,9 +1,10 @@
 import { useRef } from 'react'
-import { FileJson, FileText, Printer, RotateCcw, Settings2, Upload } from 'lucide-react'
+import { FileJson, FileText, FileUp, Printer, RotateCcw, Settings2, Upload } from 'lucide-react'
 import type { TemplateId } from '../types'
 import { useResume } from '../store/resume'
 import { useSettings } from '../store/settings'
 import { exportResumeJson, importResumeJson } from '../lib/file'
+import { openImportDialog } from './ImportDialog'
 import { Button } from './ui'
 
 const ACCENTS = ['#0f766e', '#1d4ed8', '#7c3aed', '#be185d', '#b45309', '#334155']
@@ -92,7 +93,10 @@ export function Toolbar() {
         }}
       />
       <Button variant="secondary" className="!text-xs" onClick={() => fileRef.current?.click()}>
-        <Upload size={13} /> Import
+        <Upload size={13} /> Import JSON
+      </Button>
+      <Button variant="secondary" className="!text-xs" onClick={openImportDialog} title="Import a PDF or DOCX resume">
+        <FileUp size={13} /> Import resume
       </Button>
       <Button variant="secondary" className="!text-xs" onClick={() => exportResumeJson(resume)}>
         <FileJson size={13} /> Export
