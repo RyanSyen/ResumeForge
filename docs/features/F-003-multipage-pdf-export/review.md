@@ -180,12 +180,25 @@ in Chromium's print engine can't be confirmed without a live render (this sessio
 preview tooling still can't produce one — confirmed again this round via a
 port-forwarding mismatch in the automated preview tool, unrelated to the app itself).
 
-### Outstanding before Gate 2
+## Human manual print pass — 2026-07-03 (round 3) — FULL MATRIX PASSED
 
-Re-run the manual verification script, specifically checking for:
-1. Consistent top/bottom spacing on every physical page (round 2's original ask).
-2. **New**: no horizontal clipping/overflow — confirm the resume content doesn't run
-   off the right edge or get cut short now that a real page margin is in effect.
+Human ran the complete 18-cell matrix (Chrome + Edge × 1/2/3-page resumes × Modern/
+Classic/Compact templates) after round 2's `@page margin` fix. Confirmed: consistent
+top/bottom/left/right spacing on every physical page, no horizontal
+clipping/overflow from `#resume-page`'s `210mm` width against the now-margined
+printable area, no orphaned headings, no split item cards, and 1-page output
+otherwise unchanged. All cells pass.
 
-Then continue through the full 18-cell matrix (2 browsers × {1,2,3} pages ×
-3 templates) for AC2/AC3/AC4-export-half.
+### Final acceptance criteria status
+
+1. [x] Page-break line + "Page N of M" in preview — confirmed live (round 0, this
+   review's Verification pass section).
+2. [x] 2-page print output: no orphaned heading, no split item card, all 3
+   templates — confirmed via the 18-cell matrix above.
+3. [x] 1-page export unchanged (no regression) — confirmed via the 18-cell matrix.
+4. [x] Zoom doesn't affect pagination or export — preview half confirmed live
+   (round 0); export half trivially holds (print always forces `zoom: 1 !important`,
+   unchanged by this feature) and is consistent with the 18-cell matrix results.
+
+All acceptance criteria met. `npm run lint/build/test` green (73/73 tests). Ready
+for `/pipeline-finalize`.
