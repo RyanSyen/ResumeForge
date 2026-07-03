@@ -102,3 +102,50 @@ responses matching the exact schema `importResume` produces. A human with a real
 Gemini key should exercise the flow once before merge; if AC1/AC2 fail, the fix is
 almost certainly a prompt-quality iteration in `gemini.ts`'s `importResume`, not a
 change to the surrounding extraction/validation/UI code reviewed here.
+
+## Final gate (Opus) — 2026-07-03
+
+*Cross-model review per `docs/pipeline/PIPELINE.md` stage 5. Fresh Opus session, given
+only the branch diff (`git diff main...feature/F-004-resume-import`), `spec.md`,
+`plan.md`, and `docs/Living Product Map & Feature Inventory.md` §3 — no implementation
+history, no access to this review's own findings above.*
+
+### Verdict: **SHIP**
+
+> The diff is a clean, well-scoped implementation that satisfies every
+> code-verifiable acceptance criterion, respects the out-of-scope list, steps on none
+> of the §3 landmines, and introduces no regressions. Build, lint, and the full test
+> suite (103 tests, 13 files) pass on the branch. The only unresolved items are the
+> two AI-output-quality criteria (AC1/AC2), which are structurally correct but require
+> a live Gemini key to confirm — this is documented honestly in the spec, plan
+> Deviations, and AC checkboxes, not hidden.
+
+**Acceptance criteria**: AC3–AC6 assessed **Pass** with specific file/line evidence
+cited (`ImportDialog.tsx`, `import.ts`, `gemini.test.ts`, `ImportDialog.test.tsx`).
+AC1/AC2 assessed **"structurally correct; runtime-unverified"** — explicitly not
+scored as a false pass, matching this review's own AC table above.
+
+**Landmine compliance (§3)**: §3.1 (`?key=` query-param) correctly avoided —
+`x-goog-api-key` header confirmed via test assertion on the actual fetch call args;
+existing `?key=` calls correctly left untouched per the spec's migration-is-a-follow-up
+constraint. §3.2 (print-CSS) — `print:hidden` present on `ImportDialog`'s root. §3.3
+(shallow import validation) — F-004's path is stricter than existing JSON import, not
+weaker. No persisted-shape change, no migration bump needed.
+
+**Scope discipline**: no creep — no OCR, no LinkedIn import, no merge-into-existing;
+image-only PDFs correctly surface as an extraction failure rather than being silently
+guessed at.
+
+**Notable observations for the human merger** (non-blocking):
+1. AC1/AC2 output quality genuinely unverified — run one real PDF + one real DOCX
+   through preview→apply with a live key before relying on this in production.
+2. `tsconfig.vitest.json` and `withDefaults()` (both out-of-plan additions) reviewed
+   independently and found sound.
+3. The `pdf.ts` `typeof Worker !== 'undefined'` guard is subtle — unit tests don't
+   exercise the real-browser worker branch (jsdom masks the bug this guard fixes); a
+   `pdfjs-dist` version bump should get a real-browser PDF-import smoke test, not just
+   `npm test`.
+4. `ImportDialog.tsx`'s lint warning (`react(only-export-components)`) matches an
+   already-accepted pattern on `AiPanel.tsx` — same character, not new debt.
+
+No blockers. Approved to merge.
